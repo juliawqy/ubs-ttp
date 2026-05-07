@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – UBS TTP</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <!-- Chart.js for KPI visualisations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">UBS TTP</a>
+    <a href="/dashboard" class="active">Dashboard</a>
+    <a href="/hiring">Hiring</a>
+    <a href="/training">Training</a>
+    <a href="/performance">Performance</a>
+  </nav>
+
+  <div class="container">
+    <p class="page-title"><span>Diversity</span> Dashboard</p>
+
+    <!-- KPI tiles -->
+    <div class="card-grid">
+      <div class="stat-tile">
+        <div class="stat-label">Sourcing Diversity Ratio</div>
+        <div class="stat-value" id="kpi-diversity">—</div>
+        <div class="stat-sub">% underrepresented candidates in pipeline</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Skills-First Hire Rate</div>
+        <div class="stat-value" id="kpi-skills-hire">—</div>
+        <div class="stat-sub">Hires based on skills vs credentials</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Avg Promotion Velocity</div>
+        <div class="stat-value" id="kpi-promo-velocity">—</div>
+        <div class="stat-sub">Months to next pay grade (team avg)</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">eNPS (Demographic)</div>
+        <div class="stat-value" id="kpi-enps">—</div>
+        <div class="stat-sub">Employee Net Promoter Score</div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
+      <div class="card">
+        <div class="card-title">Pipeline Diversity by Stage</div>
+        <canvas id="chart-pipeline" height="200"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">Promotion Velocity by Group</div>
+        <canvas id="chart-promotion" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Training Utilisation by Demographic Group</div>
+      <canvas id="chart-training" height="120"></canvas>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

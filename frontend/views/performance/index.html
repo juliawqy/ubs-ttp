@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Performance – UBS TTP</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">UBS TTP</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/hiring">Hiring</a>
+    <a href="/training">Training</a>
+    <a href="/performance" class="active">Performance</a>
+  </nav>
+
+  <div class="container">
+    <p class="page-title"><span>Performance</span> Reviews</p>
+
+    <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
+      <button class="btn btn-primary tab-btn" data-tab="reviews">Reviews</button>
+      <button class="btn btn-outline tab-btn" data-tab="feedback">Employee Feedback</button>
+    </div>
+
+    <!-- Tab: Reviews -->
+    <div id="tab-reviews">
+      <div class="card">
+        <div class="card-title">Current Review Cycle</div>
+        <table>
+          <thead>
+            <tr><th>Employee</th><th>Role</th><th>Status</th><th>Bias Score</th><th>Action</th></tr>
+          </thead>
+          <tbody id="reviews-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Review editor (shown when editing a review) -->
+      <div id="review-editor" style="display:none">
+        <div class="card">
+          <div class="card-title">Write Review</div>
+          <div class="form-group">
+            <label>Performance Score (1–5)</label>
+            <input type="number" id="review-score" min="1" max="5" />
+          </div>
+          <div class="form-group">
+            <label>Justification</label>
+            <textarea id="review-text" rows="5" placeholder="Describe observable behaviours and evidence…"></textarea>
+          </div>
+          <div id="ai-feedback" class="ai-banner" style="display:none">
+            <div class="ai-label">AI – Bias Detection</div>
+            <div id="ai-feedback-text"></div>
+          </div>
+          <div style="display:flex;gap:0.75rem;margin-top:1rem">
+            <button class="btn btn-primary" id="check-bias-btn">Check for Bias</button>
+            <button class="btn btn-secondary" id="submit-review-btn">Submit Review</button>
+            <button class="btn btn-outline" id="cancel-review-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Employee Feedback -->
+    <div id="tab-feedback" style="display:none">
+      <div class="card">
+        <div class="card-title">Feedback Received</div>
+        <table>
+          <thead>
+            <tr><th>From</th><th>Submitted</th><th>Theme</th><th>Sentiment</th><th>View</th></tr>
+          </thead>
+          <tbody id="feedback-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/performance.js"></script>
+</body>
+</html>

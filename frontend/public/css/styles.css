@@ -1,0 +1,159 @@
+/* ─── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --red: #e00b1c;
+  --dark: #1a1a2e;
+  --mid: #2c2c4a;
+  --light: #f5f5f5;
+  --white: #ffffff;
+  --grey: #6b7280;
+  --border: #e5e7eb;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --font: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--light);
+  color: var(--dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Nav ───────────────────────────────────────────────────────────────────── */
+nav {
+  background: var(--dark);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  gap: 2rem;
+}
+
+nav .logo {
+  color: var(--red);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  margin-right: auto;
+}
+
+nav a {
+  color: #ccc;
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+nav a:hover, nav a.active { background: var(--mid); color: var(--white); }
+
+/* ─── Layout ────────────────────────────────────────────────────────────────── */
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.page-title { font-size: 1.6rem; font-weight: 600; margin-bottom: 1.5rem; }
+.page-title span { color: var(--red); }
+
+/* ─── Cards ─────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--dark); }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ─── Stat tiles ────────────────────────────────────────────────────────────── */
+.stat-tile {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+}
+
+.stat-label { font-size: 0.8rem; color: var(--grey); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { font-size: 2rem; font-weight: 700; margin: 0.25rem 0; }
+.stat-sub { font-size: 0.8rem; color: var(--grey); }
+
+/* ─── Buttons ───────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.2rem;
+  border-radius: 5px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+  text-decoration: none;
+}
+
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--red); color: var(--white); }
+.btn-secondary { background: var(--dark); color: var(--white); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
+
+/* ─── Badges ─────────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-green { background: #d1fae5; color: #065f46; }
+.badge-yellow { background: #fef3c7; color: #92400e; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+.badge-grey { background: #f3f4f6; color: var(--grey); }
+
+/* ─── Tables ────────────────────────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th { text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; text-transform: uppercase;
+     letter-spacing: 0.05em; color: var(--grey); border-bottom: 1px solid var(--border); }
+td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+
+/* ─── Forms ─────────────────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 1rem; }
+label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem; }
+input[type="text"], input[type="email"], textarea, select {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--red); }
+
+/* ─── AI suggestion banner ──────────────────────────────────────────────────── */
+.ai-banner {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid var(--warning);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.ai-banner .ai-label { font-weight: 600; color: #92400e; margin-bottom: 0.3rem; font-size: 0.8rem; text-transform: uppercase; }

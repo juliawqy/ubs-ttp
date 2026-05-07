@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training – UBS TTP</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">UBS TTP</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/hiring">Hiring</a>
+    <a href="/training" class="active">Training</a>
+    <a href="/performance">Performance</a>
+  </nav>
+
+  <div class="container">
+    <p class="page-title"><span>Training</span> &amp; Development</p>
+
+    <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
+      <button class="btn btn-primary tab-btn" data-tab="modules">Modules</button>
+      <button class="btn btn-outline tab-btn" data-tab="iat">Self-Reflection (IAT)</button>
+      <button class="btn btn-outline tab-btn" data-tab="career">Career Mapping</button>
+    </div>
+
+    <!-- Tab: Modules -->
+    <div id="tab-modules">
+      <div class="ai-banner">
+        <div class="ai-label">AI Recommendation</div>
+        Based on your current team composition, 3 modules are recommended this quarter.
+      </div>
+      <div class="card">
+        <div class="card-title">Assigned Modules</div>
+        <table>
+          <thead>
+            <tr><th>Module</th><th>Assigned To</th><th>Due</th><th>Completion</th><th>Action</th></tr>
+          </thead>
+          <tbody id="modules-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: IAT -->
+    <div id="tab-iat" style="display:none">
+      <div class="card">
+        <div class="card-title">Implicit Association Test</div>
+        <p style="font-size:0.9rem;color:#6b7280;margin-bottom:1rem">
+          This test runs in a private sandbox. Results are visible only to you and are never shared with HR or used in your own performance review.
+        </p>
+        <button class="btn btn-primary" id="start-iat-btn">Start Private Session</button>
+      </div>
+    </div>
+
+    <!-- Tab: Career Mapping -->
+    <div id="tab-career" style="display:none">
+      <div class="card">
+        <div class="card-title">Team Career Paths</div>
+        <table>
+          <thead>
+            <tr><th>Employee</th><th>Current Role</th><th>Next Milestone</th><th>Timeline</th><th>Edit</th></tr>
+          </thead>
+          <tbody id="career-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/training.js"></script>
+</body>
+</html>

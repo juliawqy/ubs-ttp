@@ -1,0 +1,93 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ubs_ttp
+      POSTGRES_PASSWORD: localpassword
+      POSTGRES_DB: ubs_ttp
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  localstack:
+    image: localstack/localstack:3
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sqs,sns,textract
+      DEFAULT_REGION: ap-southeast-1
+
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on: [postgres, redis]
+    volumes:
+      - ./services/api-gateway/app:/app/app
+
+  recruitment:
+    build: ./services/recruitment
+    ports:
+      - "8001:8000"
+    env_file: .env
+    depends_on: [postgres, redis, localstack]
+    volumes:
+      - ./services/recruitment/app:/app/app
+
+  training:
+    build: ./services/training
+    ports:
+      - "8002:8000"
+    env_file: .env
+    depends_on: [postgres, redis]
+    volumes:
+      - ./services/training/app:/app/app
+
+  performance:
+    build: ./services/performance
+    ports:
+      - "8003:8000"
+    env_file: .env
+    depends_on: [postgres, redis]
+    volumes:
+      - ./services/performance/app:/app/app
+
+  ai-assistant:
+    build: ./services/ai-assistant
+    ports:
+      - "8004:8000"
+    env_file: .env
+    depends_on: [postgres, redis]
+    volumes:
+      - ./services/ai-assistant/app:/app/app
+
+  analytics:
+    build: ./services/analytics
+    ports:
+      - "8005:8000"
+    env_file: .env
+    depends_on: [postgres, redis]
+    volumes:
+      - ./services/analytics/app:/app/app
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - API_URL=http://api-gateway:8000
+    depends_on: [api-gateway]
+
+volumes:
+  pgdata:

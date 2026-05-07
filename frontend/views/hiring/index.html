@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hiring – UBS TTP</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">UBS TTP</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/hiring" class="active">Hiring</a>
+    <a href="/training">Training</a>
+    <a href="/performance">Performance</a>
+  </nav>
+
+  <div class="container">
+    <p class="page-title"><span>Hiring</span> — Standardised Recruitment</p>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
+      <button class="btn btn-primary tab-btn" data-tab="job-postings">Job Postings</button>
+      <button class="btn btn-outline tab-btn" data-tab="candidates">Candidates</button>
+      <button class="btn btn-outline tab-btn" data-tab="interviews">Interviews</button>
+    </div>
+
+    <!-- Tab: Job Postings -->
+    <div id="tab-job-postings">
+      <div class="card">
+        <div class="card-title">Active Job Postings</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th><th>Department</th><th>Posted</th><th>Applicants</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="postings-tbody">
+            <tr><td colspan="6" style="text-align:center;color:#6b7280">Loading...</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:1rem">
+          <button class="btn btn-primary" id="new-posting-btn">+ New Posting</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Candidates -->
+    <div id="tab-candidates" style="display:none">
+      <div class="ai-banner">
+        <div class="ai-label">AI – Blind Profiles Active</div>
+        Names, photos, gender, and graduation years have been redacted. You are evaluating skills and experience only.
+      </div>
+      <div class="card">
+        <div class="card-title">Shortlisted Candidates</div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Skills Score</th><th>Experience</th><th>Assessment</th><th>Decision</th>
+            </tr>
+          </thead>
+          <tbody id="candidates-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Interviews -->
+    <div id="tab-interviews" style="display:none">
+      <div class="card">
+        <div class="card-title">Upcoming Interviews</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Candidate</th><th>Role</th><th>Date</th><th>Panel</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="interviews-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/hiring.js"></script>
+</body>
+</html>

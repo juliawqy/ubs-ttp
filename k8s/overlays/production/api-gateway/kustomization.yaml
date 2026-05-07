@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ubs-ttp-production
+resources:
+  - ../../../base/api-gateway
+images:
+  - name: PLACEHOLDER
+    newName: ${AWS_ACCOUNT_ID}.dkr.ecr.ap-southeast-1.amazonaws.com/ubs-ttp-api-gateway
+    newTag: latest  # replaced by CI pipeline
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: api-gateway

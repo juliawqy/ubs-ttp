@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ubs_ttp_test
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: ubs_ttp_test
+    ports:
+      - "5433:5432"
+
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"

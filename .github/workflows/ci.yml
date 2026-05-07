@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      api-gateway: ${{ steps.filter.outputs.api-gateway }}
+      recruitment: ${{ steps.filter.outputs.recruitment }}
+      training: ${{ steps.filter.outputs.training }}
+      performance: ${{ steps.filter.outputs.performance }}
+      ai-assistant: ${{ steps.filter.outputs.ai-assistant }}
+      analytics: ${{ steps.filter.outputs.analytics }}
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            api-gateway:
+              - 'services/api-gateway/**'
+            recruitment:
+              - 'services/recruitment/**'
+            training:
+              - 'services/training/**'
+            performance:
+              - 'services/performance/**'
+            ai-assistant:
+              - 'services/ai-assistant/**'
+            analytics:
+              - 'services/analytics/**'
+            infra:
+              - 'infrastructure/**'
+
+  lint-and-test-python:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api-gateway, recruitment, training, performance, ai-assistant, analytics]
+    if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          pip install -r services/${{ matrix.service }}/requirements.txt
+          pip install ruff pytest pytest-cov
+      - name: Lint
+        run: ruff check services/${{ matrix.service }}
+      - name: Test
+        run: pytest services/${{ matrix.service }}/tests --cov=services/${{ matrix.service }}/app --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+
+  lint-and-test-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: cd frontend && npm ci
+      - name: Check for syntax errors
+        run: node --check frontend/src/server.js
+
+  e2e:
+    needs: [lint-and-test-python, lint-and-test-frontend]
+    if: always() && !failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Start services
+        run: docker compose -f docker-compose.test.yml up -d
+      - name: Install Playwright
+        run: cd frontend && npm ci && npx playwright install --with-deps
+      - name: Run e2e tests
+        run: cd frontend && npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+
+  terraform-plan:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform fmt check
+        run: terraform -chdir=infrastructure/environments/staging fmt -check
+      - name: Terraform init
+        run: terraform -chdir=infrastructure/environments/staging init -backend=false
+      - name: Terraform validate
+        run: terraform -chdir=infrastructure/environments/staging validate
+
+  docker-build-check:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api-gateway, recruitment, training, performance, ai-assistant, analytics]
+    if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: services/${{ matrix.service }}
+          push: false
+          tags: ${{ matrix.service }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
