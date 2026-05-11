@@ -10,7 +10,7 @@ dev:
 	docker compose up --build
 
 dev-backend:
-	docker compose up --build postgres redis localstack api-gateway recruitment training performance ai-assistant analytics
+	docker compose up --build postgres localstack recruitment training performance ai-assistant analytics
 
 test:
 	docker compose -f docker-compose.test.yml up -d

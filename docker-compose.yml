@@ -12,17 +12,12 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
   localstack:
     image: localstack/localstack:3
     ports:
       - "4566:4566"
     environment:
-      SERVICES: s3,sqs,sns,textract
+      SERVICES: s3,sqs
       DEFAULT_REGION: ap-southeast-1
 
   recruitment:
@@ -30,7 +25,7 @@ services:
     ports:
       - "8001:8000"
     env_file: .env
-    depends_on: [postgres, redis, localstack]
+    depends_on: [postgres, localstack]
     volumes:
       - ./services/recruitment/app:/app/app
 
@@ -39,7 +34,7 @@ services:
     ports:
       - "8002:8000"
     env_file: .env
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     volumes:
       - ./services/training/app:/app/app
 
@@ -48,7 +43,7 @@ services:
     ports:
       - "8003:8000"
     env_file: .env
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     volumes:
       - ./services/performance/app:/app/app
 
@@ -57,7 +52,7 @@ services:
     ports:
       - "8004:8000"
     env_file: .env
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     volumes:
       - ./services/ai-assistant/app:/app/app
 
@@ -66,7 +61,7 @@ services:
     ports:
       - "8005:8000"
     env_file: .env
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     volumes:
       - ./services/analytics/app:/app/app
 
