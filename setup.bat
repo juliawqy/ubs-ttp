@@ -16,4 +16,8 @@ echo [3/3] Installing frontend dependencies...
 cd frontend && npm install && cd ..
 
 echo.
-echo Setup complete! Run "docker compose up --build" to start the app.
+echo Setup complete!
+echo.
+echo To start the app:   docker compose up --build
+echo To run linting:     python -m ruff check services/
+echo To run security:    python -m bandit -r services/ -ll -q
