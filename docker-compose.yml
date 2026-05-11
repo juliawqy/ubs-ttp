@@ -12,82 +12,67 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
   localstack:
     image: localstack/localstack:3
     ports:
       - "4566:4566"
     environment:
-      SERVICES: s3,sqs,sns,textract
+      SERVICES: s3,sqs
       DEFAULT_REGION: ap-southeast-1
 
-  api-gateway:
-    build: ./services/api-gateway
-    ports:
-      - "8000:8000"
-    env_file: .env
-    depends_on: [postgres, redis]
-    volumes:
-      - ./services/api-gateway/app:/app/app
-
   recruitment:
-    build: ./services/recruitment
+    build:
+      context: ./services
+      dockerfile: recruitment/Dockerfile
     ports:
       - "8001:8000"
     env_file: .env
-    depends_on: [postgres, redis, localstack]
-    volumes:
-      - ./services/recruitment/app:/app/app
+    depends_on: [postgres, localstack]
 
   training:
-    build: ./services/training
+    build:
+      context: ./services
+      dockerfile: training/Dockerfile
     ports:
       - "8002:8000"
     env_file: .env
-    depends_on: [postgres, redis]
-    volumes:
-      - ./services/training/app:/app/app
+    depends_on: [postgres]
 
   performance:
-    build: ./services/performance
+    build:
+      context: ./services
+      dockerfile: performance/Dockerfile
     ports:
       - "8003:8000"
     env_file: .env
-    depends_on: [postgres, redis]
-    volumes:
-      - ./services/performance/app:/app/app
+    depends_on: [postgres]
 
   ai-assistant:
-    build: ./services/ai-assistant
+    build:
+      context: ./services
+      dockerfile: ai-assistant/Dockerfile
     ports:
       - "8004:8000"
     env_file: .env
-    depends_on: [postgres, redis]
-    volumes:
-      - ./services/ai-assistant/app:/app/app
+    depends_on: [postgres]
 
   analytics:
-    build: ./services/analytics
+    build:
+      context: ./services
+      dockerfile: analytics/Dockerfile
     ports:
       - "8005:8000"
     env_file: .env
-    depends_on: [postgres, redis]
-    volumes:
-      - ./services/analytics/app:/app/app
+    depends_on: [postgres]
 
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
-    env_file: .env
     environment:
       - NODE_ENV=development
-      - API_URL=http://api-gateway:8000
-    depends_on: [api-gateway]
+      - API_URL=http://recruitment:8000
+    depends_on: [recruitment, training, performance, ai-assistant, analytics]
 
 volumes:
   pgdata:

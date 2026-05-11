@@ -10,23 +10,27 @@ dev:
 	docker compose up --build
 
 dev-backend:
-	docker compose up --build postgres redis localstack api-gateway recruitment training performance ai-assistant analytics
+	docker compose up --build postgres localstack recruitment training performance ai-assistant analytics
 
 test:
 	docker compose -f docker-compose.test.yml up -d
-	for svc in api-gateway recruitment training performance ai-assistant analytics; do \
+	for svc in shared recruitment training performance ai-assistant analytics; do \
 		pytest services/$$svc/tests -v; \
 	done
 	docker compose -f docker-compose.test.yml down
 
-test-e2e:
-	docker compose up -d
-	cd frontend && npx playwright test
-	docker compose down
-
 lint:
 	ruff check services/
-	cd frontend && npm run lint
+	cd frontend && node --check src/server.js
+
+security:
+	bandit -r services/ -ll -q
+	for svc in shared recruitment training performance ai-assistant analytics; do \
+		safety check -r services/$$svc/requirements.txt; \
+	done
+
+docs:
+	cd docs && bash generate.sh
 
 build:
 	docker compose build
