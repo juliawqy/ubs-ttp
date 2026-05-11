@@ -28,6 +28,7 @@ services:
     depends_on: [postgres, localstack]
     volumes:
       - ./services/recruitment/app:/app/app
+      - ./services/shared:/app/shared
 
   training:
     build: ./services/training
@@ -37,6 +38,7 @@ services:
     depends_on: [postgres]
     volumes:
       - ./services/training/app:/app/app
+      - ./services/shared:/app/shared
 
   performance:
     build: ./services/performance
@@ -46,6 +48,7 @@ services:
     depends_on: [postgres]
     volumes:
       - ./services/performance/app:/app/app
+      - ./services/shared:/app/shared
 
   ai-assistant:
     build: ./services/ai-assistant
@@ -55,6 +58,7 @@ services:
     depends_on: [postgres]
     volumes:
       - ./services/ai-assistant/app:/app/app
+      - ./services/shared:/app/shared
 
   analytics:
     build: ./services/analytics
@@ -64,15 +68,15 @@ services:
     depends_on: [postgres]
     volumes:
       - ./services/analytics/app:/app/app
+      - ./services/shared:/app/shared
 
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
-    env_file: .env
     environment:
       - NODE_ENV=development
-      - API_URL=http://localhost:8000
+      - API_URL=http://recruitment:8000
     depends_on: [recruitment, training, performance, ai-assistant, analytics]
 
 volumes:
