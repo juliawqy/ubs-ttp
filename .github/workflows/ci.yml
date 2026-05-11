@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
-      api-gateway: ${{ steps.filter.outputs.api-gateway }}
+      shared: ${{ steps.filter.outputs.shared }}
       recruitment: ${{ steps.filter.outputs.recruitment }}
       training: ${{ steps.filter.outputs.training }}
       performance: ${{ steps.filter.outputs.performance }}
@@ -24,8 +24,8 @@ jobs:
           filters: |
             frontend:
               - 'frontend/**'
-            api-gateway:
-              - 'services/api-gateway/**'
+            shared:
+              - 'services/shared/**'
             recruitment:
               - 'services/recruitment/**'
             training:
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api-gateway, recruitment, training, performance, ai-assistant, analytics]
+        service: [shared, recruitment, training, performance, ai-assistant, analytics]
     if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api-gateway, recruitment, training, performance, ai-assistant, analytics]
+        service: [shared, recruitment, training, performance, ai-assistant, analytics]
     if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
     steps:
       - uses: actions/checkout@v4
