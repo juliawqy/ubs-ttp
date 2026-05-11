@@ -2,9 +2,9 @@
 Bias classifier service for the ai-assistant.
 Delegates to shared.bias_analyzer — no duplicate logic here.
 """
-from shared.bias_analyzer import BiasAnalyzer, BiasAnalysisResult
-from shared.ai_client import ClaudeClient
 from pydantic_settings import BaseSettings
+from shared.ai_client import ClaudeClient
+from shared.bias_analyzer import BiasAnalyzer
 
 
 class Settings(BaseSettings):

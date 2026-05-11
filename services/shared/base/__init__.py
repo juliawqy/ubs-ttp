@@ -1,2 +1,2 @@
-from .service import BaseService
-from .repository import BaseRepository
+from .service import BaseService as BaseService
+from .repository import BaseRepository as BaseRepository

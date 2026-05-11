@@ -2,7 +2,6 @@
 PDF and Word document parser.
 Uses pdfplumber (not AWS Textract) — no AI cost, no vendor lock-in.
 """
-from pathlib import Path
 import pdfplumber
 
 
