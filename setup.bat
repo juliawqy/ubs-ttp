@@ -10,7 +10,7 @@ if not exist .env (
 )
 
 echo [2/3] Installing Python dev tools...
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt --user
 
 echo [3/3] Installing frontend dependencies...
 cd frontend && npm install && cd ..
