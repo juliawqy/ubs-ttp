@@ -21,54 +21,49 @@ services:
       DEFAULT_REGION: ap-southeast-1
 
   recruitment:
-    build: ./services/recruitment
+    build:
+      context: ./services
+      dockerfile: recruitment/Dockerfile
     ports:
       - "8001:8000"
     env_file: .env
     depends_on: [postgres, localstack]
-    volumes:
-      - ./services/recruitment/app:/app/app
-      - ./services/shared:/app/shared
 
   training:
-    build: ./services/training
+    build:
+      context: ./services
+      dockerfile: training/Dockerfile
     ports:
       - "8002:8000"
     env_file: .env
     depends_on: [postgres]
-    volumes:
-      - ./services/training/app:/app/app
-      - ./services/shared:/app/shared
 
   performance:
-    build: ./services/performance
+    build:
+      context: ./services
+      dockerfile: performance/Dockerfile
     ports:
       - "8003:8000"
     env_file: .env
     depends_on: [postgres]
-    volumes:
-      - ./services/performance/app:/app/app
-      - ./services/shared:/app/shared
 
   ai-assistant:
-    build: ./services/ai-assistant
+    build:
+      context: ./services
+      dockerfile: ai-assistant/Dockerfile
     ports:
       - "8004:8000"
     env_file: .env
     depends_on: [postgres]
-    volumes:
-      - ./services/ai-assistant/app:/app/app
-      - ./services/shared:/app/shared
 
   analytics:
-    build: ./services/analytics
+    build:
+      context: ./services
+      dockerfile: analytics/Dockerfile
     ports:
       - "8005:8000"
     env_file: .env
     depends_on: [postgres]
-    volumes:
-      - ./services/analytics/app:/app/app
-      - ./services/shared:/app/shared
 
   frontend:
     build: ./frontend
