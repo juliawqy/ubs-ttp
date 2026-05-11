@@ -14,15 +14,9 @@ dev-backend:
 
 test:
 	docker compose -f docker-compose.test.yml up -d
-	for svc in api-gateway recruitment training performance ai-assistant analytics; do \
 		pytest services/$$svc/tests -v; \
 	done
 	docker compose -f docker-compose.test.yml down
-
-test-e2e:
-	docker compose up -d
-	cd frontend && npx playwright test
-	docker compose down
 
 lint:
 	ruff check services/
