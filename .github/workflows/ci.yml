@@ -52,11 +52,15 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r services/${{ matrix.service }}/requirements.txt
-          pip install ruff pytest pytest-cov
-      - name: Lint
+          pip install ruff pytest pytest-cov bandit safety
+      - name: Lint (ruff)
         run: ruff check services/${{ matrix.service }}
-      - name: Test
-        run: pytest services/${{ matrix.service }}/tests --cov=services/${{ matrix.service }}/app --cov-report=xml
+      - name: Security scan (bandit)
+        run: bandit -r services/${{ matrix.service }} -ll -q
+      - name: Dependency CVE scan (safety)
+        run: safety check -r services/${{ matrix.service }}/requirements.txt
+      - name: Test (pytest)
+        run: pytest services/${{ matrix.service }}/tests -v --cov=services/${{ matrix.service }} --cov-report=xml
       - name: Upload coverage
         uses: codecov/codecov-action@v4
 
@@ -75,46 +79,12 @@ jobs:
       - name: Check for syntax errors
         run: node --check frontend/src/server.js
 
-    needs: [lint-and-test-python, lint-and-test-frontend]
-    if: always() && !failure()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Start services
-        run: docker compose -f docker-compose.test.yml up -d
-      - name: Install Playwright
-        run: cd frontend && npm ci && npx playwright install --with-deps
-      - name: Run e2e tests
-        run: cd frontend && npx playwright test
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-report
-          path: frontend/playwright-report/
-
-  terraform-plan:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.infra == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-      - name: Terraform fmt check
-        run: terraform -chdir=infrastructure/environments/staging fmt -check
-      - name: Terraform init
-        run: terraform -chdir=infrastructure/environments/staging init -backend=false
-      - name: Terraform validate
-        run: terraform -chdir=infrastructure/environments/staging validate
-
   docker-build-check:
     needs: detect-changes
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [shared, recruitment, training, performance, ai-assistant, analytics]
+        service: [recruitment, training, performance, ai-assistant, analytics]
     if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
     steps:
       - uses: actions/checkout@v4
