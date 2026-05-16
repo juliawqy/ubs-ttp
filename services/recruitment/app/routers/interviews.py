@@ -4,7 +4,7 @@ POST /interviews/assign-panel — assign a diverse interview panel from a given 
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.services.panel_assignment import Interviewer, PanelAssignmentService
+from app.services.panel_assignment import Interviewer, PanelAssignmentService, MIN_PANEL_SIZE
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
 
@@ -22,7 +22,7 @@ class InterviewerIn(BaseModel):
 
 class AssignPanelRequest(BaseModel):
     interviewer_pool: list[InterviewerIn]
-    panel_size: int = 3
+    panel_size: int = MIN_PANEL_SIZE
 
 
 # ── routes ────────────────────────────────────────────────────────────────────

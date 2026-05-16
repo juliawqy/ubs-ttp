@@ -81,3 +81,77 @@ class TestPanelAssignment:
             json={"panel_size": 3},
         )
         assert response.status_code == 422
+
+
+class TestPanelSizeInput:
+    # ── valid sizes ──────────────────────────────────────────────────────────
+
+    def test_panel_size_3_returns_3_interviewers(self):
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 3},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["interviewers"]) == 3
+
+    def test_panel_size_4_returns_4_interviewers(self):
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 4},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["interviewers"]) == 4
+
+    def test_omitting_panel_size_defaults_to_3(self):
+        """Default must be the service minimum (3), not an arbitrary constant."""
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["interviewers"]) == 3
+
+    # ── boundary ─────────────────────────────────────────────────────────────
+
+    def test_panel_size_at_minimum_succeeds(self):
+        """3 is the lowest valid panel size — must not be rejected."""
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 3},
+        )
+        assert response.status_code == 200
+
+    def test_panel_size_equal_to_pool_size_succeeds(self):
+        """panel_size == len(pool) is valid — uses every available interviewer."""
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": len(DIVERSE_POOL)},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["interviewers"]) == len(DIVERSE_POOL)
+
+    def test_panel_size_exceeds_pool_returns_422(self):
+        """Requesting more interviewers than are available must fail."""
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": len(DIVERSE_POOL) + 1},
+        )
+        assert response.status_code == 422
+
+    # ── edge cases ────────────────────────────────────────────────────────────
+
+    def test_panel_size_below_minimum_returns_422(self):
+        """panel_size=2 is below the service minimum of 3."""
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 2},
+        )
+        assert response.status_code == 422
+
+    def test_panel_size_1_returns_422(self):
+        """A single-person panel provides no diversity check."""
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 1},
+        )
+        assert response.status_code == 422

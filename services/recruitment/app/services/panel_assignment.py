@@ -22,13 +22,15 @@ class PanelAssignment:
     rejection_reason: str | None = None
 
 
+MIN_PANEL_SIZE = 3  
+
 class PanelAssignmentService(BaseService):
     """
     Selects a diverse interview panel from a pool of interviewers.
     A panel is approved only if it has both gender and department diversity.
     """
 
-    def __init__(self, min_panel_size: int = 3):
+    def __init__(self, min_panel_size: int = MIN_PANEL_SIZE):
         self._min_panel_size = min_panel_size
 
     def assign(
