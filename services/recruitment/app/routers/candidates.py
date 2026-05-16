@@ -2,6 +2,7 @@
 Candidates router.
 POST /candidates/upload  — ingest a CV (PDF), redact PII, return blind profile
 GET  /candidates         — list all stored blind profiles
+POST /candidates/assess  — score a candidate against weighted criteria
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
@@ -20,6 +21,20 @@ _candidates: dict[int, dict] = {}
 _next_id = 1
 
 ALLOWED_CONTENT_TYPES = {"application/pdf"}
+
+
+# ── schemas ───────────────────────────────────────────────────────────────────
+
+class AssessRequest(BaseModel):
+    criteria: list[dict]   # [{name, weight, required}]
+    scores: dict[str, float]
+
+
+class AssessResponse(BaseModel):
+    total_score: float
+    breakdown: dict
+
+
 # ── routes ────────────────────────────────────────────────────────────────────
 
 @router.post("/upload")
@@ -55,3 +70,22 @@ def list_candidates():
         {"candidate_id": c["id"], "redacted_text": c["redacted_text"]}
         for c in _candidates.values()
     ]
+
+
+@router.post("/assess", response_model=AssessResponse)
+def assess_candidate(body: AssessRequest):
+    criteria = [
+        AssessmentCriteria(
+            name=c["name"],
+            weight=c["weight"],
+            required=c["required"],
+        )
+        for c in body.criteria
+    ]
+
+    try:
+        result = _assessment_service.score(body.scores, criteria)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    return AssessResponse(total_score=result.total_score, breakdown=result.breakdown)
