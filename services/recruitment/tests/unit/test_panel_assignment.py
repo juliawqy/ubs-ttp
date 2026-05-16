@@ -166,3 +166,69 @@ class TestAdditionalNegative:
         single = [Interviewer(id="i1", name="Alex", gender="male", department="eng")]
         with pytest.raises(ValueError, match="pool"):
             service.assign(single, panel_size=3)
+
+
+class TestMandatoryInterviewers:
+    # ── mandatory people always appear in the result ──────────────────────────
+
+    def test_mandatory_interviewer_is_included(self, service, diverse_pool):
+        result = service.assign(diverse_pool, panel_size=3, mandatory_ids=["i1"])
+        ids = [iv.id for iv in result.interviewers]
+        assert "i1" in ids
+
+    def test_multiple_mandatory_interviewers_all_included(self, service, diverse_pool):
+        result = service.assign(diverse_pool, panel_size=3, mandatory_ids=["i1", "i2"])
+        ids = [iv.id for iv in result.interviewers]
+        assert "i1" in ids
+        assert "i2" in ids
+
+    def test_panel_size_still_respected_with_mandatory(self, service, diverse_pool):
+        result = service.assign(diverse_pool, panel_size=3, mandatory_ids=["i1"])
+        assert len(result.interviewers) == 3
+
+    def test_mandatory_fills_entire_panel_when_count_equals_size(self, service, diverse_pool):
+        result = service.assign(diverse_pool, panel_size=3, mandatory_ids=["i1", "i2", "i3"])
+        assert len(result.interviewers) == 3
+        ids = [iv.id for iv in result.interviewers]
+        assert set(ids) == {"i1", "i2", "i3"}
+
+    # ── diversity maximised in remaining slots ────────────────────────────────
+
+    def test_fill_slots_prefer_new_gender(self, service):
+        """One mandatory male — remaining slot should prefer a female."""
+        pool = [
+            Interviewer(id="m1", name="Mandatory", gender="male", department="engineering"),
+            Interviewer(id="f1", name="Female opt", gender="female", department="product"),
+            Interviewer(id="m2", name="Male opt", gender="male", department="hr"),
+        ]
+        result = service.assign(pool, panel_size=3, mandatory_ids=["m1"])
+        ids = [iv.id for iv in result.interviewers]
+        assert "f1" in ids  # female picked to add gender diversity
+
+    def test_diversity_checked_on_full_panel_including_mandatory(self, service):
+        """Mandatory members count towards the diversity check."""
+        pool = [
+            Interviewer(id="i1", name="John", gender="male", department="engineering"),
+            Interviewer(id="i2", name="Sara", gender="female", department="engineering"),
+            Interviewer(id="i3", name="Tom", gender="male", department="engineering"),
+        ]
+        # All same department — panel should be rejected even though mandatory is set
+        result = service.assign(pool, panel_size=3, mandatory_ids=["i1"])
+        assert result.approved is False
+        assert "department" in result.rejection_reason.lower()
+
+    # ── validation errors ─────────────────────────────────────────────────────
+
+    def test_mandatory_id_not_in_pool_raises(self, service, diverse_pool):
+        with pytest.raises(ValueError, match="not found in pool"):
+            service.assign(diverse_pool, panel_size=3, mandatory_ids=["does-not-exist"])
+
+    def test_more_mandatory_than_panel_size_raises(self, service, diverse_pool):
+        with pytest.raises(ValueError, match="exceed panel_size"):
+            service.assign(diverse_pool, panel_size=3, mandatory_ids=["i1", "i2", "i3", "i4"])
+
+    def test_no_mandatory_ids_behaves_as_before(self, service, diverse_pool):
+        """Omitting mandatory_ids is identical to passing an empty list."""
+        result_none = service.assign(diverse_pool, panel_size=3)
+        result_empty = service.assign(diverse_pool, panel_size=3, mandatory_ids=[])
+        assert len(result_none.interviewers) == len(result_empty.interviewers) == 3

@@ -155,3 +155,56 @@ class TestPanelSizeInput:
             json={"interviewer_pool": DIVERSE_POOL, "panel_size": 1},
         )
         assert response.status_code == 422
+
+
+class TestMandatoryInterviewers:
+    def test_mandatory_id_appears_in_panel(self):
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 3, "mandatory_ids": ["i1"]},
+        )
+        assert response.status_code == 200
+        ids = [m["id"] for m in response.json()["interviewers"]]
+        assert "i1" in ids
+
+    def test_multiple_mandatory_ids_all_appear(self):
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 3, "mandatory_ids": ["i1", "i2"]},
+        )
+        ids = [m["id"] for m in response.json()["interviewers"]]
+        assert "i1" in ids
+        assert "i2" in ids
+
+    def test_panel_size_still_correct_with_mandatory(self):
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 3, "mandatory_ids": ["i1"]},
+        )
+        assert len(response.json()["interviewers"]) == 3
+
+    def test_omitting_mandatory_ids_still_works(self):
+        """mandatory_ids defaults to empty — existing callers are unaffected."""
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 3},
+        )
+        assert response.status_code == 200
+
+    def test_mandatory_id_not_in_pool_returns_422(self):
+        response = client.post(
+            "/interviews/assign-panel",
+            json={"interviewer_pool": DIVERSE_POOL, "panel_size": 3, "mandatory_ids": ["unknown"]},
+        )
+        assert response.status_code == 422
+
+    def test_more_mandatory_than_panel_size_returns_422(self):
+        response = client.post(
+            "/interviews/assign-panel",
+            json={
+                "interviewer_pool": DIVERSE_POOL,
+                "panel_size": 3,
+                "mandatory_ids": ["i1", "i2", "i3", "i4"],
+            },
+        )
+        assert response.status_code == 422

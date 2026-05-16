@@ -23,6 +23,7 @@ class InterviewerIn(BaseModel):
 class AssignPanelRequest(BaseModel):
     interviewer_pool: list[InterviewerIn]
     panel_size: int = MIN_PANEL_SIZE
+    mandatory_ids: list[str] = []
 
 
 # ── routes ────────────────────────────────────────────────────────────────────
@@ -35,7 +36,11 @@ def assign_panel(body: AssignPanelRequest):
     ]
 
     try:
-        result = _panel_service.assign(pool, panel_size=body.panel_size)
+        result = _panel_service.assign(
+            pool,
+            panel_size=body.panel_size,
+            mandatory_ids=body.mandatory_ids,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
