@@ -39,3 +39,5 @@ out/
 # Generated docs
 docs/generated/
 docs/.venv
+frontend/playwright-report/
+frontend/test-results/

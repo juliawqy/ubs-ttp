@@ -5,6 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hiring – UBS TTP</title>
   <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 8px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal h2 { margin: 0 0 1.5rem; font-size: 1.2rem; }
+    .form-row { margin-bottom: 1rem; }
+    .form-row label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: #374151; }
+    .form-row input, .form-row textarea, .form-row select {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+    .form-row textarea { resize: vertical; min-height: 80px; }
+    .form-section-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      margin: 1.25rem 0 0.75rem;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 1rem;
+    }
+    .form-error { color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+    .bias-warning { margin-top: 1rem; display: none; }
+    .upload-section { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .upload-status { font-size: 0.85rem; }
+    .hint { font-size: 0.78rem; color: #6b7280; margin-top: 0.25rem; }
+  </style>
 </head>
 <body>
   <nav>
@@ -22,21 +70,25 @@
     <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
       <button class="btn btn-primary tab-btn" data-tab="job-postings">Job Postings</button>
       <button class="btn btn-outline tab-btn" data-tab="candidates">Candidates</button>
-      <button class="btn btn-outline tab-btn" data-tab="interviews">Interviews</button>
+      <button class="btn btn-outline tab-btn" data-tab="interviews">Panel Assignment</button>
     </div>
 
     <!-- Tab: Job Postings -->
     <div id="tab-job-postings">
       <div class="card">
-        <div class="card-title">Active Job Postings</div>
+        <div class="card-title">Job Postings</div>
         <table>
           <thead>
             <tr>
-              <th>Role</th><th>Department</th><th>Posted</th><th>Applicants</th><th>Status</th><th></th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Manager</th>
+              <th>Status</th>
+              <th>Bias Check</th>
             </tr>
           </thead>
           <tbody id="postings-tbody">
-            <tr><td colspan="6" style="text-align:center;color:#6b7280">Loading...</td></tr>
+            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
           </tbody>
         </table>
         <div style="margin-top:1rem">
@@ -52,35 +104,114 @@
         Names, photos, gender, and graduation years have been redacted. You are evaluating skills and experience only.
       </div>
       <div class="card">
-        <div class="card-title">Shortlisted Candidates</div>
+        <div class="card-title">Upload Candidate CV</div>
+        <form id="upload-form" class="upload-section">
+          <input type="file" id="cv-file" accept=".pdf,.docx" />
+          <button type="submit" class="btn btn-primary">Upload</button>
+          <span class="upload-status" id="upload-status"></span>
+        </form>
+      </div>
+      <div class="card" style="margin-top:1rem">
+        <div class="card-title">Blind Profiles</div>
         <table>
           <thead>
             <tr>
-              <th>ID</th><th>Skills Score</th><th>Experience</th><th>Assessment</th><th>Decision</th>
+              <th>Candidate ID</th>
+              <th>Profile Preview</th>
             </tr>
           </thead>
           <tbody id="candidates-tbody">
-            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+            <tr><td colspan="2" style="text-align:center;color:#6b7280">Loading...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Tab: Interviews -->
+    <!-- Tab: Panel Assignment -->
     <div id="tab-interviews" style="display:none">
-      <div class="card">
-        <div class="card-title">Upcoming Interviews</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Candidate</th><th>Role</th><th>Date</th><th>Panel</th><th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="interviews-tbody">
-            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
-          </tbody>
-        </table>
+      <div class="ai-banner">
+        <div class="ai-label">AI – Diversity-Optimised Panel Suggestion</div>
+        A panel is suggested to maximise gender and departmental diversity. The final decision rests with the hiring manager.
       </div>
+      <div class="card">
+        <div class="card-title">Assign Interview Panel</div>
+        <form id="assign-panel-form">
+          <div class="form-row">
+            <label for="pool_json">Interviewer Pool (JSON)</label>
+            <textarea id="pool_json" name="pool_json" rows="8" placeholder='[
+  {"id": "iv-001", "name": "Alice Smith", "gender": "Female", "department": "Engineering", "seniority": "Senior"},
+  {"id": "iv-002", "name": "Bob Jones",  "gender": "Male",   "department": "Engineering", "seniority": "Mid"},
+  {"id": "iv-003", "name": "Carol Lee",  "gender": "Female", "department": "HR",          "seniority": "Senior"}
+]'></textarea>
+            <p class="hint">Each interviewer requires: id, name, gender, department, seniority.</p>
+          </div>
+          <div class="form-row">
+            <label for="panel_size">Panel Size</label>
+            <input type="number" id="panel_size" name="panel_size" value="3" min="3" />
+          </div>
+          <div class="form-row">
+            <label for="mandatory_ids">Mandatory Interviewer IDs (comma-separated, optional)</label>
+            <input type="text" id="mandatory_ids" name="mandatory_ids" placeholder="iv-001, iv-003" />
+          </div>
+          <p class="form-error" id="panel-error"></p>
+          <div style="margin-top:1rem">
+            <button type="submit" class="btn btn-primary">Suggest Panel</button>
+          </div>
+        </form>
+        <div id="panel-result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Posting Modal -->
+  <div class="modal-overlay" id="new-posting-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <h2 id="modal-title">Request New Job Posting</h2>
+      <form id="new-posting-form" novalidate>
+        <div class="form-row">
+          <label for="post-title">Job Title *</label>
+          <input type="text" id="post-title" name="title" placeholder="e.g. Senior Python Engineer" required />
+        </div>
+        <div class="form-row">
+          <label for="post-description">Description *</label>
+          <textarea id="post-description" name="description" placeholder="Describe the role and responsibilities…" required></textarea>
+        </div>
+        <div class="form-row">
+          <label for="post-requirements">Requirements * <span style="font-weight:400">(comma-separated)</span></label>
+          <input type="text" id="post-requirements" name="requirements" placeholder="Python, SQL, REST APIs" required />
+        </div>
+        <div class="form-row">
+          <label for="post-department">Department *</label>
+          <input type="text" id="post-department" name="department" placeholder="e.g. Engineering" required />
+        </div>
+
+        <p class="form-section-label">Hiring Manager Details</p>
+
+        <div class="form-row">
+          <label for="manager-name">Name *</label>
+          <input type="text" id="manager-name" name="manager_name" placeholder="Full name" required />
+        </div>
+        <div class="form-row">
+          <label for="manager-id">Employee ID *</label>
+          <input type="text" id="manager-id" name="manager_id" placeholder="e.g. mgr-001" required />
+        </div>
+        <div class="form-row">
+          <label for="manager-dept">Manager's Department *</label>
+          <input type="text" id="manager-dept" name="manager_dept" placeholder="e.g. Engineering" required />
+        </div>
+        <div class="form-row">
+          <label for="manager-email">Email *</label>
+          <input type="email" id="manager-email" name="manager_email" placeholder="manager@ubs.com" required />
+        </div>
+
+        <div class="bias-warning" id="bias-result"></div>
+        <p class="form-error" id="form-error"></p>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit">Submit Posting</button>
+        </div>
+      </form>
     </div>
   </div>
 
