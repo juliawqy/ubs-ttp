@@ -7,6 +7,7 @@
  */
 import { test, expect } from "@playwright/test";
 
+/** @type {any[]} */
 const MOCK_POSTINGS = [
   {
     id: 1,
@@ -50,6 +51,10 @@ const MOCK_PANEL = {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {any[]} data
+ */
 async function mockGetPostings(page, data = MOCK_POSTINGS) {
   await page.route("**/api/job-postings", (route) => {
     if (route.request().method() === "GET") {
@@ -60,6 +65,10 @@ async function mockGetPostings(page, data = MOCK_POSTINGS) {
   });
 }
 
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {any[]} data
+ */
 async function mockGetCandidates(page, data = MOCK_CANDIDATES) {
   await page.route("**/api/candidates", (route) => {
     if (route.request().method() === "GET") {
@@ -177,7 +186,7 @@ test.describe("New Posting modal", () => {
 
   test("sends correct payload to API", async ({ page }) => {
     await mockGetPostings(page);
-    let capturedBody = null;
+    let capturedBody = /** @type {any} */ (null);
 
     await page.route("**/api/job-postings", async (route) => {
       if (route.request().method() === "POST") {
@@ -202,6 +211,7 @@ test.describe("New Posting modal", () => {
 
     await page.getByRole("button", { name: "Submit Posting" }).click();
 
+    expect(capturedBody).not.toBeNull();
     expect(capturedBody.title).toBe("Senior Python Engineer");
     expect(capturedBody.requirements).toEqual(["Python", "SQL"]);
     expect(capturedBody.manager.id).toBe("mgr-001");
