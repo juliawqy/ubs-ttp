@@ -79,6 +79,20 @@ jobs:
       - name: Check for syntax errors
         run: node --check frontend/src/server.js
 
+  sonarcloud:
+    needs: lint-and-test-python
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history needed for blame info
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   docker-build-check:
     needs: detect-changes
     runs-on: ubuntu-latest
