@@ -13,6 +13,7 @@ class Interviewer:
     name: str
     gender: str
     department: str
+    seniority: str = ""
 
 
 @dataclass
