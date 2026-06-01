@@ -18,6 +18,7 @@ class InterviewerIn(BaseModel):
     name: str
     gender: str
     department: str
+    seniority: str = ""
 
 
 class AssignPanelRequest(BaseModel):
@@ -31,7 +32,7 @@ class AssignPanelRequest(BaseModel):
 @router.post("/assign-panel")
 def assign_panel(body: AssignPanelRequest):
     pool = [
-        Interviewer(id=iv.id, name=iv.name, gender=iv.gender, department=iv.department)
+        Interviewer(id=iv.id, name=iv.name, gender=iv.gender, department=iv.department, seniority=iv.seniority)
         for iv in body.interviewer_pool
     ]
 
@@ -47,7 +48,7 @@ def assign_panel(body: AssignPanelRequest):
     return {
         "approved": result.approved,
         "interviewers": [
-            {"id": iv.id, "name": iv.name, "gender": iv.gender, "department": iv.department}
+            {"id": iv.id, "name": iv.name, "gender": iv.gender, "department": iv.department, "seniority": iv.seniority}
             for iv in result.interviewers
         ],
         "rejection_reason": result.rejection_reason,
