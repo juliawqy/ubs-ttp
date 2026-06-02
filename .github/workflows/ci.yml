@@ -63,17 +63,19 @@ jobs:
       - name: Test (pytest)
         run: |
           if [ -n "$(find services/${{ matrix.service }}/tests -name 'test_*.py' 2>/dev/null)" ]; then
-            PYTHONPATH=services pytest services/${{ matrix.service }}/tests -v \
-              --cov=services/${{ matrix.service }} \
-              --cov-report=xml:coverage-${{ matrix.service }}.xml
+            PYTHONPATH=services pytest services/${{ matrix.service }}/tests -v --cov=services/${{ matrix.service }} --cov-report=xml:coverage.xml
           else
             echo "No tests found for ${{ matrix.service }}, skipping."
           fi
-      - name: Upload coverage
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: coverage-${{ matrix.service }}.xml
-        continue-on-error: true
+          files: coverage.xml
+      - name: Upload coverage artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}
+          path: coverage.xml
 
   lint-and-test-frontend:
     needs: detect-changes
@@ -89,6 +91,26 @@ jobs:
       - run: cd frontend && npm ci
       - name: Check for syntax errors
         run: node --check frontend/src/server.js
+
+  sonarcloud:
+    needs: lint-and-test-python
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+        continue-on-error: true
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   docker-build-check:
     needs: detect-changes
