@@ -1,25 +1,33 @@
 #!/bin/bash
 # Documentation-as-code generator
-# Generates HTML docs from Python source and OpenAPI specs
+# Generates HTML docs from Python docstrings using pdoc
 set -e
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$REPO_ROOT/docs/generated"
+VENV="$REPO_ROOT/docs/.venv"
 mkdir -p "$OUT"
 
-echo "Generating API docs from OpenAPI specs..."
-SERVICES=(recruitment training performance ai-assistant analytics)
-for svc in "${SERVICES[@]}"; do
-  PORT_MAP=("recruitment:8001" "training:8002" "performance:8003" "ai-assistant:8004" "analytics:8005")
-  echo "  - $svc"
-done
+# Create a venv for doc generation so we don't need system-wide installs
+if [ ! -d "$VENV" ]; then
+  echo "Creating venv for doc generation..."
+  python3 -m venv "$VENV"
+fi
 
-echo "Generating Python module docs with pdoc..."
-pip install pdoc -q
+PIP="$VENV/bin/pip"
+PYTHON="$VENV/bin/python"
+
+echo "Installing dependencies..."
+$PIP install -q pdoc fastapi pydantic pydantic-settings \
+  sqlalchemy httpx pdfplumber python-docx anthropic \
+  boto3 pandas
+
+echo "Generating Python module docs..."
 for svc in shared recruitment training performance ai-assistant analytics; do
-  pdoc "$REPO_ROOT/services/$svc" \
-    --output-dir "$OUT/$svc" \
-    --no-browser 2>/dev/null || echo "  (skipped $svc — run after installing deps)"
+  echo "  - $svc"
+  PYTHONPATH="$REPO_ROOT/services" \
+    $PYTHON -m pdoc "$REPO_ROOT/services/$svc" \
+    --output-dir "$OUT/$svc" || echo "    (skipped $svc)"
 done
 
-echo "Done. Docs written to docs/generated/"
+echo "Done. Open docs/generated/*/index.html in your browser."

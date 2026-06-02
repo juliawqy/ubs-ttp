@@ -51,6 +51,7 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: |
+          pip install -r services/shared/requirements.txt
           pip install -r services/${{ matrix.service }}/requirements.txt
           pip install ruff pytest pytest-cov pytest-asyncio bandit safety
       - name: Lint (ruff)
