@@ -3,7 +3,7 @@ Interviews router.
 POST /interviews/assign-panel — assign a diverse interview panel from a given pool
 """
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.services.panel_assignment import Interviewer, PanelAssignmentService, MIN_PANEL_SIZE
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
@@ -14,17 +14,25 @@ _panel_service = PanelAssignmentService()
 # ── schemas ───────────────────────────────────────────────────────────────────
 
 class InterviewerIn(BaseModel):
-    id: str
-    name: str
-    gender: str
-    department: str
-    seniority: str = ""
+    id: str = Field(..., example="iv-001")
+    name: str = Field(..., example="Alice Smith")
+    gender: str = Field(..., example="Female")
+    department: str = Field(..., example="Engineering")
+    seniority: str = Field(default="", example="Senior")
 
 
 class AssignPanelRequest(BaseModel):
-    interviewer_pool: list[InterviewerIn]
-    panel_size: int = MIN_PANEL_SIZE
-    mandatory_ids: list[str] = []
+    interviewer_pool: list[InterviewerIn] = Field(
+        ...,
+        example=[
+            {"id": "iv-001", "name": "Alice Smith",  "gender": "Female", "department": "Engineering", "seniority": "Senior"},
+            {"id": "iv-002", "name": "Bob Jones",    "gender": "Male",   "department": "Engineering", "seniority": "Mid"},
+            {"id": "iv-003", "name": "Carol Lee",    "gender": "Female", "department": "HR",          "seniority": "Senior"},
+            {"id": "iv-004", "name": "David Tan",    "gender": "Male",   "department": "Product",     "seniority": "Lead"},
+        ],
+    )
+    panel_size: int = Field(default=MIN_PANEL_SIZE, ge=MIN_PANEL_SIZE, example=3)
+    mandatory_ids: list[str] = Field(default=[], example=[])
 
 
 # ── routes ────────────────────────────────────────────────────────────────────

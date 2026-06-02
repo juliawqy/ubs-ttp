@@ -5,7 +5,7 @@ GET  /candidates         — list all stored blind profiles
 POST /candidates/assess  — score a candidate against weighted criteria
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from shared.document_parser.pdf_parser import PDFParser
 from shared.document_parser.pii_redactor import PIIRedactor
 from app.services.skills_assessment import SkillsAssessmentService, AssessmentCriteria
@@ -25,9 +25,24 @@ ALLOWED_CONTENT_TYPES = {"application/pdf"}
 
 # ── schemas ───────────────────────────────────────────────────────────────────
 
+class CriterionIn(BaseModel):
+    name: str = Field(..., example="python")
+    weight: float = Field(..., ge=0, le=1, example=0.6)
+    required: bool = Field(..., example=True)
+
+
 class AssessRequest(BaseModel):
-    criteria: list[dict]   # [{name, weight, required}]
-    scores: dict[str, float]
+    criteria: list[CriterionIn] = Field(
+        ...,
+        example=[
+            {"name": "python", "weight": 0.6, "required": True},
+            {"name": "sql",    "weight": 0.4, "required": True},
+        ],
+    )
+    scores: dict[str, float] = Field(
+        ...,
+        example={"python": 8.0, "sql": 7.0},
+    )
 
 
 class AssessResponse(BaseModel):
