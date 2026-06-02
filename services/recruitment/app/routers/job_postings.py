@@ -40,12 +40,12 @@ class JobPostingCreate(BaseModel):
 
 # ── routes ────────────────────────────────────────────────────────────────────
 
-@router.get("/")
+@router.get("")
 def list_job_postings():
     return list(_store.values())
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def create_job_posting(body: JobPostingCreate):
     global _next_id
 

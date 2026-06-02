@@ -79,7 +79,7 @@ async def upload_candidate(file: UploadFile = File(...)):
     return {"candidate_id": candidate_id, "redacted_text": redacted_text}
 
 
-@router.get("/")
+@router.get("")
 def list_candidates():
     return [
         {"candidate_id": c["id"], "redacted_text": c["redacted_text"]}
