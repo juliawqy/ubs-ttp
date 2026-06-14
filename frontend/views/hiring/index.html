@@ -3,55 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hiring – UBS TTP</title>
+  <title>Hiring - UBS TTP</title>
   <link rel="stylesheet" href="/css/styles.css" />
   <style>
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: #fff;
-      border-radius: 8px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .modal h2 { margin: 0 0 1.5rem; font-size: 1.2rem; }
-    .form-row { margin-bottom: 1rem; }
-    .form-row label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: #374151; }
-    .form-row input, .form-row textarea, .form-row select {
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      box-sizing: border-box;
-    }
-    .form-row textarea { resize: vertical; min-height: 80px; }
-    .form-section-label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #6b7280;
-      margin: 1.25rem 0 0.75rem;
-      border-top: 1px solid #e5e7eb;
-      padding-top: 1rem;
-    }
-    .form-error { color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
-    .bias-warning { margin-top: 1rem; display: none; }
-    .upload-section { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .upload-status { font-size: 0.85rem; }
-    .hint { font-size: 0.78rem; color: #6b7280; margin-top: 0.25rem; }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:#fff; border-radius:8px; padding:2rem; width:90%; max-width:600px; max-height:90vh; overflow-y:auto; }
+    .modal h2 { margin:0 0 1.5rem; font-size:1.2rem; }
+    .form-row { margin-bottom:1rem; }
+    .form-row label { display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.3rem; color:#374151; }
+    .form-row input, .form-row textarea, .form-row select { width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:4px; font-size:0.9rem; box-sizing:border-box; }
+    .form-row textarea { resize:vertical; min-height:80px; }
+    .form-section-label { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#6b7280; margin:1.25rem 0 0.75rem; border-top:1px solid #e5e7eb; padding-top:1rem; }
+    .form-error { color:#ef4444; font-size:0.85rem; margin-top:0.5rem; display:none; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem; }
+    .bias-warning { margin-top:1rem; display:none; }
+    .upload-section { margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .upload-status { font-size:0.85rem; }
+    .hint { font-size:0.78rem; color:#6b7280; margin-top:0.25rem; }
+    .criteria-row { display:grid; grid-template-columns:1fr 80px 80px 32px; gap:0.4rem; margin-bottom:0.4rem; align-items:center; }
+    .criteria-row input { padding:0.3rem 0.5rem; }
+    .btn-icon { background:none; border:none; color:#ef4444; cursor:pointer; font-size:1rem; padding:0; }
+    .score-row { display:grid; grid-template-columns:1fr 100px; gap:0.5rem; margin-bottom:0.4rem; align-items:center; }
+    .score-row label { font-size:0.85rem; margin:0; }
+    .breakdown-table { width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:0.75rem; }
+    .breakdown-table th, .breakdown-table td { padding:0.4rem 0.6rem; border:1px solid #e5e7eb; text-align:left; }
+    .breakdown-table th { background:#f9fafb; }
   </style>
 </head>
 <body>
@@ -64,9 +41,8 @@
   </nav>
 
   <div class="container">
-    <p class="page-title"><span>Hiring</span> — Standardised Recruitment</p>
+    <p class="page-title"><span>Hiring</span> - Standardised Recruitment</p>
 
-    <!-- Tabs -->
     <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
       <button class="btn btn-primary tab-btn" data-tab="job-postings">Job Postings</button>
       <button class="btn btn-outline tab-btn" data-tab="candidates">Candidates</button>
@@ -79,13 +55,7 @@
         <div class="card-title">Job Postings</div>
         <table>
           <thead>
-            <tr>
-              <th>Role</th>
-              <th>Department</th>
-              <th>Manager</th>
-              <th>Status</th>
-              <th>Bias Check</th>
-            </tr>
+            <tr><th>Role</th><th>Department</th><th>Manager</th><th>Status</th><th>Bias Check</th></tr>
           </thead>
           <tbody id="postings-tbody">
             <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
@@ -100,13 +70,13 @@
     <!-- Tab: Candidates -->
     <div id="tab-candidates" style="display:none">
       <div class="ai-banner">
-        <div class="ai-label">AI – Blind Profiles Active</div>
+        <div class="ai-label">AI - Blind Profiles Active</div>
         Names, photos, gender, and graduation years have been redacted. You are evaluating skills and experience only.
       </div>
       <div class="card">
         <div class="card-title">Upload Candidate CV</div>
         <form id="upload-form" class="upload-section">
-          <input type="file" id="cv-file" accept=".pdf,.docx" />
+          <input type="file" id="cv-file" accept=".pdf" />
           <button type="submit" class="btn btn-primary">Upload</button>
           <span class="upload-status" id="upload-status"></span>
         </form>
@@ -115,13 +85,10 @@
         <div class="card-title">Blind Profiles</div>
         <table>
           <thead>
-            <tr>
-              <th>Candidate ID</th>
-              <th>Profile Preview</th>
-            </tr>
+            <tr><th>Candidate ID</th><th>Profile Preview</th><th>Status</th><th>Actions</th></tr>
           </thead>
           <tbody id="candidates-tbody">
-            <tr><td colspan="2" style="text-align:center;color:#6b7280">Loading...</td></tr>
+            <tr><td colspan="4" style="text-align:center;color:#6b7280">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -130,7 +97,7 @@
     <!-- Tab: Panel Assignment -->
     <div id="tab-interviews" style="display:none">
       <div class="ai-banner">
-        <div class="ai-label">AI – Diversity-Optimised Panel Suggestion</div>
+        <div class="ai-label">AI - Diversity-Optimised Panel Suggestion</div>
         A panel is suggested to maximise gender and departmental diversity. The final decision rests with the hiring manager.
       </div>
       <div class="card">
@@ -163,55 +130,92 @@
     </div>
   </div>
 
-  <!-- New Posting Modal -->
+  <!-- Modal: New Job Posting -->
   <div class="modal-overlay" id="new-posting-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal">
       <h2 id="modal-title">Request New Job Posting</h2>
       <form id="new-posting-form" novalidate>
-        <div class="form-row">
-          <label for="post-title">Job Title *</label>
-          <input type="text" id="post-title" name="title" placeholder="e.g. Senior Python Engineer" required />
-        </div>
-        <div class="form-row">
-          <label for="post-description">Description *</label>
-          <textarea id="post-description" name="description" placeholder="Describe the role and responsibilities…" required></textarea>
-        </div>
-        <div class="form-row">
-          <label for="post-requirements">Requirements * <span style="font-weight:400">(comma-separated)</span></label>
-          <input type="text" id="post-requirements" name="requirements" placeholder="Python, SQL, REST APIs" required />
-        </div>
-        <div class="form-row">
-          <label for="post-department">Department *</label>
-          <input type="text" id="post-department" name="department" placeholder="e.g. Engineering" required />
-        </div>
-
+        <div class="form-row"><label for="post-title">Job Title *</label><input type="text" id="post-title" name="title" placeholder="e.g. Senior Python Engineer" required /></div>
+        <div class="form-row"><label for="post-description">Description *</label><textarea id="post-description" name="description" placeholder="Describe the role and responsibilities" required></textarea></div>
+        <div class="form-row"><label for="post-requirements">Requirements * <span style="font-weight:400">(comma-separated)</span></label><input type="text" id="post-requirements" name="requirements" placeholder="Python, SQL, REST APIs" required /></div>
+        <div class="form-row"><label for="post-department">Department *</label><input type="text" id="post-department" name="department" placeholder="e.g. Engineering" required /></div>
         <p class="form-section-label">Hiring Manager Details</p>
-
-        <div class="form-row">
-          <label for="manager-name">Name *</label>
-          <input type="text" id="manager-name" name="manager_name" placeholder="Full name" required />
-        </div>
-        <div class="form-row">
-          <label for="manager-id">Employee ID *</label>
-          <input type="text" id="manager-id" name="manager_id" placeholder="e.g. mgr-001" required />
-        </div>
-        <div class="form-row">
-          <label for="manager-dept">Manager's Department *</label>
-          <input type="text" id="manager-dept" name="manager_dept" placeholder="e.g. Engineering" required />
-        </div>
-        <div class="form-row">
-          <label for="manager-email">Email *</label>
-          <input type="email" id="manager-email" name="manager_email" placeholder="manager@ubs.com" required />
-        </div>
-
+        <div class="form-row"><label for="manager-name">Name *</label><input type="text" id="manager-name" name="manager_name" placeholder="Full name" required /></div>
+        <div class="form-row"><label for="manager-id">Employee ID *</label><input type="text" id="manager-id" name="manager_id" placeholder="e.g. mgr-001" required /></div>
+        <div class="form-row"><label for="manager-dept">Manager's Department *</label><input type="text" id="manager-dept" name="manager_dept" placeholder="e.g. Engineering" required /></div>
+        <div class="form-row"><label for="manager-email">Email *</label><input type="email" id="manager-email" name="manager_email" placeholder="manager@ubs.com" required /></div>
         <div class="bias-warning" id="bias-result"></div>
         <p class="form-error" id="form-error"></p>
-
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" id="modal-cancel">Cancel</button>
           <button type="submit" class="btn btn-primary" id="modal-submit">Submit Posting</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Skills Assessment -->
+  <div class="modal-overlay" id="assess-modal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2>Skills Assessment</h2>
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">Candidate #<span id="assess-candidate-id"></span></p>
+      <form id="assess-form">
+        <p class="form-section-label" style="margin-top:0;border-top:none;padding-top:0">Scoring Criteria</p>
+        <div style="display:grid;grid-template-columns:1fr 80px 80px 32px;gap:0.4rem;margin-bottom:0.4rem">
+          <span style="font-size:0.78rem;color:#6b7280;font-weight:600">Skill</span>
+          <span style="font-size:0.78rem;color:#6b7280;font-weight:600">Weight</span>
+          <span style="font-size:0.78rem;color:#6b7280;font-weight:600">Required</span>
+          <span></span>
+        </div>
+        <div id="criteria-rows"></div>
+        <button type="button" class="btn btn-outline" id="add-criterion" style="margin-bottom:1rem;font-size:0.82rem">+ Add Criterion</button>
+        <p class="form-section-label">Scores (0-10)</p>
+        <div id="score-rows"></div>
+        <p style="font-size:0.78rem;color:#6b7280;margin-bottom:1rem">Weights must sum to 1.0</p>
+        <p class="form-error" id="assess-error"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="assess-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Calculate Score</button>
+        </div>
+      </form>
+      <div id="assess-result" style="display:none;margin-top:1.25rem">
+        <p class="form-section-label" style="margin-top:0;border-top:1px solid #e5e7eb;padding-top:1rem">Result</p>
+        <p style="font-size:1.4rem;font-weight:700;color:#1f2937">Total Score: <span id="assess-total"></span> / 10</p>
+        <table class="breakdown-table">
+          <thead><tr><th>Skill</th><th>Score</th></tr></thead>
+          <tbody id="assess-breakdown"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Hire Decision -->
+  <div class="modal-overlay" id="decide-modal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2>Hiring Decision</h2>
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">Candidate #<span id="decide-candidate-id"></span></p>
+      <form id="decide-form">
+        <div class="form-row">
+          <label for="decision-select">Decision *</label>
+          <select id="decision-select" name="decision" required>
+            <option value="">-- Select --</option>
+            <option value="hired">Hired</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="justification-text">Written Justification *</label>
+          <textarea id="justification-text" name="justification" rows="5"
+            placeholder="Explain the rationale for this decision. This text will be checked for potentially biased language." required></textarea>
+          <p class="hint">The system will flag potentially biased language for your review. You retain the final decision.</p>
+        </div>
+        <p class="form-error" id="decide-error"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="decide-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="decide-submit">Submit Decision</button>
+        </div>
+      </form>
+      <div id="decide-result" style="display:none;margin-top:1.25rem"></div>
     </div>
   </div>
 
