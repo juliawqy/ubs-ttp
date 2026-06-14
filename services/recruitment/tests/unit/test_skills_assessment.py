@@ -3,7 +3,8 @@ Unit tests for SkillsAssessment.
 Run: pytest services/recruitment/tests/unit/test_skills_assessment.py -v
 """
 import pytest
-from app.services.skills_assessment import SkillsAssessmentService, AssessmentCriteria, CandidateScore
+from app.services.skills_assessment import SkillsAssessmentService
+from app.models import AssessmentCriteria, CandidateScore
 
 
 @pytest.fixture
