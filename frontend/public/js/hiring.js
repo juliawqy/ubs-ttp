@@ -27,11 +27,12 @@ async function loadPostings() {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#6b7280">No postings yet. Create the first one.</td></tr>`;
       return;
     }
-    tbody.innerHTML = data.map((p) => {
+    _postingsCache = data;
+    tbody.innerHTML = data.map((p, i) => {
       const biasBadge = p.bias_check.flagged
         ? `<span class="badge badge-red">&#9888; ${p.bias_check.flagged_phrases.length} flag(s)</span>`
         : `<span class="badge badge-green">Clean</span>`;
-      return `<tr>
+      return `<tr style="cursor:pointer" onclick="openPostingDetail(${i})">
         <td>${p.title}</td>
         <td>${p.department}</td>
         <td>${p.manager.name}</td>
@@ -44,19 +45,93 @@ async function loadPostings() {
   }
 }
 
+let _postingsCache = [];
+let _currentDetailIndex = null;
+
+function openPostingDetail(index) {
+  const p = _postingsCache[index];
+  if (!p) return;
+  _currentDetailIndex = index;
+  const biasHtml = p.bias_check.flagged
+    ? `<div class="ai-banner" style="margin-top:1rem">
+        <div class="ai-label">Bias Detected - Advisory Only</div>
+        <ul style="margin-top:0.5rem;padding-left:1.2rem">
+          ${p.bias_check.flagged_phrases.map((fp) =>
+            `<li><strong>"${fp.phrase}"</strong> — ${fp.reason}. <em>Suggestion: ${fp.suggestion}</em></li>`
+          ).join("")}
+        </ul>
+      </div>`
+    : `<p style="color:#22c55e;margin-top:0.75rem;font-size:0.85rem">No biased language detected.</p>`;
+
+  const reqList = (p.requirements || []).map((r) => `<li>${r}</li>`).join("") || "<li>—</li>";
+
+  const detailModal = document.getElementById("posting-detail-modal");
+  detailModal.querySelector("#detail-title").textContent = p.title;
+  detailModal.querySelector("#detail-body").innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
+      <div><span style="font-size:0.75rem;color:#6b7280;text-transform:uppercase">Department</span><p style="margin:0.2rem 0 0;font-weight:600">${p.department}</p></div>
+      <div><span style="font-size:0.75rem;color:#6b7280;text-transform:uppercase">Status</span><p style="margin:0.2rem 0 0"><span class="badge badge-yellow">${p.status}</span></p></div>
+      <div><span style="font-size:0.75rem;color:#6b7280;text-transform:uppercase">Manager</span><p style="margin:0.2rem 0 0;font-weight:600">${p.manager.name}</p></div>
+      <div><span style="font-size:0.75rem;color:#6b7280;text-transform:uppercase">Manager Email</span><p style="margin:0.2rem 0 0">${p.manager.email}</p></div>
+    </div>
+    <p style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;margin-bottom:0.3rem">Description</p>
+    <p style="margin:0 0 1rem;line-height:1.5">${p.description}</p>
+    <p style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;margin-bottom:0.3rem">Requirements</p>
+    <ul style="margin:0 0 0 1.2rem;padding:0;line-height:1.6">${reqList}</ul>
+    <p style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;margin-top:1rem;margin-bottom:0.3rem">Bias Check</p>
+    ${biasHtml}`;
+  detailModal.classList.add("open");
+}
+
 const modal = document.getElementById("new-posting-modal");
 const modalForm = document.getElementById("new-posting-form");
+let editingPostingId = null;
 
-document.getElementById("new-posting-btn").addEventListener("click", () => {
+function _resetPostingModal() {
+  editingPostingId = null;
   modalForm.reset();
   document.getElementById("bias-result").style.display = "none";
   document.getElementById("bias-result").innerHTML = "";
   document.getElementById("form-error").style.display = "none";
-  document.getElementById("modal-submit").textContent = "Submit Posting";
-  document.getElementById("modal-submit").disabled = false;
+  document.getElementById("modal-title").textContent = "Request New Job Posting";
+  const submitBtn = document.getElementById("modal-submit");
+  submitBtn.type = "submit";
+  submitBtn.textContent = "Submit Posting";
+  submitBtn.disabled = false;
+}
+
+document.getElementById("new-posting-btn").addEventListener("click", () => {
+  _resetPostingModal();
   modal.classList.add("open");
 });
 
+function openEditPostingModal(index) {
+  const p = _postingsCache[index];
+  if (!p) return;
+  document.getElementById("posting-detail-modal").classList.remove("open");
+  _resetPostingModal();
+  editingPostingId = p.id;
+  document.getElementById("modal-title").textContent = "Edit Job Posting";
+  modalForm.title.value = p.title;
+  modalForm.description.value = p.description;
+  modalForm.requirements.value = (p.requirements || []).join(", ");
+  modalForm.department.value = p.department;
+  modalForm.manager_id.value = p.manager.id;
+  modalForm.manager_name.value = p.manager.name;
+  modalForm.manager_dept.value = p.manager.department;
+  modalForm.manager_email.value = p.manager.email;
+  document.getElementById("modal-submit").textContent = "Save Changes";
+  modal.classList.add("open");
+}
+
+document.getElementById("detail-edit-btn").addEventListener("click", () => {
+  if (_currentDetailIndex !== null) openEditPostingModal(_currentDetailIndex);
+});
+
+document.getElementById("posting-detail-modal").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("posting-detail-modal"))
+    document.getElementById("posting-detail-modal").classList.remove("open");
+});
 document.getElementById("modal-cancel").addEventListener("click", () => modal.classList.remove("open"));
 modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
 
@@ -77,17 +152,20 @@ modalForm.addEventListener("submit", async (e) => {
       email: form.manager_email.value.trim(),
     },
   };
+  const isEdit = editingPostingId !== null;
   submitBtn.disabled = true;
-  submitBtn.textContent = "Submitting...";
+  submitBtn.textContent = isEdit ? "Saving..." : "Submitting...";
   document.getElementById("form-error").style.display = "none";
   try {
-    const result = await api.post("/job-postings", body);
+    const result = isEdit
+      ? await api.put(`/job-postings/${editingPostingId}`, body)
+      : await api.post("/job-postings", body);
     if (result.bias_check.flagged) {
       const biasDiv = document.getElementById("bias-result");
       biasDiv.innerHTML = `
         <div class="ai-banner">
           <div class="ai-label">Bias Detected - Advisory Only</div>
-          The following phrases may introduce bias. You can revise before the hiring department reviews your request.
+          The following phrases may introduce bias. The posting has already been ${isEdit ? "saved" : "submitted"} — review the notes below and edit again if you'd like to revise.
           <ul style="margin-top:0.5rem;padding-left:1.2rem">
             ${result.bias_check.flagged_phrases.map((fp) =>
               `<li><strong>"${fp.phrase}"</strong> - ${fp.reason}. <em>Suggestion: ${fp.suggestion}</em></li>`
@@ -95,10 +173,9 @@ modalForm.addEventListener("submit", async (e) => {
           </ul>
         </div>`;
       biasDiv.style.display = "block";
-      submitBtn.textContent = "Close";
-      submitBtn.disabled = false;
-      submitBtn.type = "button";
-      submitBtn.addEventListener("click", () => modal.classList.remove("open"), { once: true });
+      submitBtn.disabled = true;
+      submitBtn.textContent = isEdit ? "Saved" : "Submitted";
+      document.getElementById("modal-cancel").textContent = "Close";
     } else {
       modal.classList.remove("open");
     }
@@ -108,7 +185,7 @@ modalForm.addEventListener("submit", async (e) => {
     errEl.textContent = err.message;
     errEl.style.display = "block";
     submitBtn.disabled = false;
-    submitBtn.textContent = "Submit Posting";
+    submitBtn.textContent = isEdit ? "Save Changes" : "Submit Posting";
   }
 });
 
@@ -118,7 +195,7 @@ async function loadCandidates() {
   try {
     const data = await api.get("/candidates");
     if (data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#6b7280">No candidates uploaded yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#6b7280">No candidates uploaded yet.</td></tr>`;
       return;
     }
     tbody.innerHTML = data.map((c) => {
@@ -128,20 +205,29 @@ async function loadCandidates() {
         : c.status === "rejected"
         ? `<span class="badge badge-red">Rejected</span>`
         : `<span class="badge badge-yellow">Pending</span>`;
+      const scoreCell = c.latest_assessment
+        ? `${c.latest_assessment.total_score.toFixed(2)} / 10`
+        : `<span style="color:#9ca3af">—</span>`;
+      const decisionCell = c.decision
+        ? `<span style="font-size:0.82rem">${c.decision.justification}${c.decision.bias_flagged ? ' <span class="badge badge-red" style="font-size:0.68rem">bias noted</span>' : ''}</span>`
+        : `<span style="color:#9ca3af">—</span>`;
+      const isDecided = c.status !== "pending";
       return `<tr>
         <td>Candidate #${c.candidate_id}</td>
-        <td style="max-width:360px">${preview}</td>
+        <td style="max-width:280px">${preview}</td>
         <td>${statusBadge}</td>
+        <td style="white-space:nowrap">${scoreCell}</td>
+        <td style="max-width:220px">${decisionCell}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline" style="font-size:0.78rem;padding:0.25rem 0.6rem;margin-right:0.35rem"
-            onclick="openAssessModal(${c.candidate_id})">Assess</button>
+            onclick="openAssessModal(${c.candidate_id})" ${isDecided ? "disabled" : ""}>Assess</button>
           <button class="btn btn-primary" style="font-size:0.78rem;padding:0.25rem 0.6rem"
-            onclick="openDecideModal(${c.candidate_id})" ${c.status !== "pending" ? "disabled" : ""}>Decide</button>
+            onclick="openDecideModal(${c.candidate_id})" ${isDecided ? "disabled" : ""}>Decide</button>
         </td>
       </tr>`;
     }).join("");
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="4" style="color:#ef4444">${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="color:#ef4444">${e.message}</td></tr>`;
   }
 }
 
@@ -241,6 +327,7 @@ document.getElementById("assess-form").addEventListener("submit", async (e) => {
   });
 
   const body = {
+    candidate_id: assessCandidateId,
     criteria: criteria.map((c) => ({
       name: c.name,
       weight: parseFloat(c.weight),
@@ -261,6 +348,7 @@ document.getElementById("assess-form").addEventListener("submit", async (e) => {
       { name: "python", weight: "0.6", required: true },
       { name: "sql",    weight: "0.4", required: true },
     ];
+    loadCandidates();
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
@@ -269,7 +357,10 @@ document.getElementById("assess-form").addEventListener("submit", async (e) => {
 
 // ── Hire Decision Modal ────────────────────────────────────────────────────────
 const decideModal = document.getElementById("decide-modal");
+const decideBiasModal = document.getElementById("decide-bias-modal");
 let decideCandidateId = null;
+let _pendingDecision = null;
+let _pendingJustification = null;
 
 function openDecideModal(candidateId) {
   decideCandidateId = candidateId;
@@ -278,7 +369,9 @@ function openDecideModal(candidateId) {
   document.getElementById("decide-result").style.display = "none";
   document.getElementById("decide-error").style.display = "none";
   document.getElementById("decide-form").style.display = "block";
-  document.getElementById("decide-submit").disabled = false;
+  const submitBtn = document.getElementById("decide-submit");
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Submit Decision";
   decideModal.classList.add("open");
 }
 
@@ -291,16 +384,75 @@ document.getElementById("decide-form").addEventListener("submit", async (e) => {
   const errEl = document.getElementById("decide-error");
   const submitBtn = document.getElementById("decide-submit");
   errEl.style.display = "none";
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Submitting...";
 
-  const body = {
-    decision: form.decision.value,
-    justification: form.justification.value.trim(),
-  };
+  const justification = form.justification.value.trim();
+  const decision = form.decision.value;
+
+  if (!decision) {
+    errEl.textContent = "Please select a decision (Hired or Rejected).";
+    errEl.style.display = "block";
+    return;
+  }
+  if (!justification) {
+    errEl.textContent = "A written justification is required before submitting.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Checking...";
 
   try {
-    const result = await api.post(`/candidates/${decideCandidateId}/decide`, body);
+    const biasResult = await api.post("/candidates/check-justification-bias", { text: justification });
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit Decision";
+    if (biasResult.flagged) {
+      _pendingDecision = decision;
+      _pendingJustification = justification;
+      _openDecideBiasModal(biasResult.flagged_phrases);
+    } else {
+      await _recordDecision(decideCandidateId, decision, justification);
+    }
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit Decision";
+  }
+});
+
+function _openDecideBiasModal(flaggedPhrases) {
+  const list = document.getElementById("decide-bias-modal-list");
+  list.innerHTML = flaggedPhrases.map((fp) =>
+    `<li><strong>"${fp.phrase}"</strong> — ${fp.reason}. <em>${fp.suggestion}</em></li>`
+  ).join("");
+  decideBiasModal.classList.add("open");
+}
+
+document.getElementById("decide-bias-edit-btn").addEventListener("click", () => {
+  // Just dismiss the popup — the Hire Decision form underneath is untouched,
+  // so the user can revise the justification text and submit again.
+  decideBiasModal.classList.remove("open");
+  _pendingDecision = null;
+  _pendingJustification = null;
+});
+
+document.getElementById("decide-bias-confirm-btn").addEventListener("click", async () => {
+  const confirmBtn = document.getElementById("decide-bias-confirm-btn");
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = "Submitting...";
+  decideBiasModal.classList.remove("open");
+  await _recordDecision(decideCandidateId, _pendingDecision, _pendingJustification);
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = "Submit Anyway";
+});
+
+decideBiasModal.addEventListener("click", (e) => { if (e.target === decideBiasModal) decideBiasModal.classList.remove("open"); });
+
+async function _recordDecision(candidateId, decision, justification) {
+  const errEl = document.getElementById("decide-error");
+  try {
+    const result = await api.post(`/candidates/${candidateId}/decide`, { decision, justification });
     document.getElementById("decide-form").style.display = "none";
     const resultDiv = document.getElementById("decide-result");
     const decisionLabel = result.decision === "hired"
@@ -311,11 +463,11 @@ document.getElementById("decide-form").addEventListener("submit", async (e) => {
     if (result.bias_check.flagged) {
       biasHtml = `
         <div class="ai-banner" style="margin-top:1rem">
-          <div class="ai-label">Bias Detected in Justification - Advisory Only</div>
-          The following phrases may reflect unconscious bias. This is for your awareness only; the decision has been recorded.
+          <div class="ai-label">Bias Noted in Final Justification</div>
+          The following phrases were flagged and recorded for audit purposes.
           <ul style="margin-top:0.5rem;padding-left:1.2rem">
             ${result.bias_check.flagged_phrases.map((fp) =>
-              `<li><strong>"${fp.phrase}"</strong> - ${fp.reason}. <em>Suggestion: ${fp.suggestion}</em></li>`
+              `<li><strong>"${fp.phrase}"</strong> — ${fp.reason}. <em>${fp.suggestion}</em></li>`
             ).join("")}
           </ul>
         </div>`;
@@ -330,14 +482,16 @@ document.getElementById("decide-form").addEventListener("submit", async (e) => {
         <button class="btn btn-outline" onclick="decideModal.classList.remove('open');loadCandidates()">Close</button>
       </div>`;
     resultDiv.style.display = "block";
+    _pendingDecision = null;
+    _pendingJustification = null;
     loadCandidates();
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Submit Decision";
+    const submitBtn = document.getElementById("decide-submit");
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Submit Decision"; }
   }
-});
+}
 
 // ── Panel Assignment ───────────────────────────────────────────────────────────
 document.getElementById("assign-panel-form").addEventListener("submit", async (e) => {
@@ -350,8 +504,8 @@ document.getElementById("assign-panel-form").addEventListener("submit", async (e
   let pool;
   try {
     pool = JSON.parse(form.pool_json.value);
-  } catch {
-    errorEl.textContent = "Invalid JSON - check the interviewer pool format.";
+  } catch (e) {
+    errorEl.textContent = `Invalid JSON — ${e.message}. Common causes: trailing commas before ] or }, single quotes instead of double quotes.`;
     errorEl.style.display = "block";
     return;
   }

@@ -42,6 +42,7 @@ class CandidateStore:
             "redacted_text": redacted_text,
             "status": "pending",
             "decision": None,
+            "latest_assessment": None,
             "_pii_map": pii_map,
         }
         self._next_id += 1
@@ -57,6 +58,7 @@ class CandidateStore:
             "redacted_text": entry["redacted_text"],
             "status": entry["status"],
             "decision": entry["decision"],
+            "latest_assessment": entry["latest_assessment"],
         }
 
     def update_status(self, candidate_id: int, status: str, decision_summary: dict) -> None:
@@ -66,6 +68,17 @@ class CandidateStore:
         self._store[candidate_id]["status"] = status
         self._store[candidate_id]["decision"] = decision_summary
 
+    def update_assessment(self, candidate_id: int, assessment_summary: dict) -> None:
+        """Store the most recent skills-assessment result for a candidate.
+
+        Overwrites any previous assessment — only the latest score is kept,
+        per the one-time-decision workflow (assessment is locked once a
+        hire/reject decision is recorded).
+        """
+        if candidate_id not in self._store:
+            raise KeyError(candidate_id)
+        self._store[candidate_id]["latest_assessment"] = assessment_summary
+
     def list_public(self) -> list[dict]:
         """Return all profiles, stripping the PII map."""
         return [
@@ -73,6 +86,8 @@ class CandidateStore:
                 "candidate_id": c["id"],
                 "redacted_text": c["redacted_text"],
                 "status": c["status"],
+                "decision": c["decision"],
+                "latest_assessment": c["latest_assessment"],
             }
             for c in self._store.values()
         ]
@@ -90,6 +105,7 @@ class CriterionIn(BaseModel):
 
 
 class AssessRequest(BaseModel):
+    candidate_id: int = Field(..., example=1)
     criteria: list[CriterionIn] = Field(
         ...,
         example=[
@@ -104,6 +120,7 @@ class AssessRequest(BaseModel):
 
 
 class AssessResponse(BaseModel):
+    candidate_id: int
     total_score: float
     breakdown: dict
 
@@ -157,6 +174,15 @@ def get_candidate(candidate_id: int):
 
 @router.post("/assess", response_model=AssessResponse)
 def assess_candidate(body: AssessRequest):
+    candidate = _store.get(body.candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    if candidate["status"] != "pending":
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot assess a candidate after a hiring decision has been recorded",
+        )
+
     criteria = [
         AssessmentCriteria(name=c.name, weight=c.weight, required=c.required)
         for c in body.criteria
@@ -165,7 +191,34 @@ def assess_candidate(body: AssessRequest):
         result = _assessment_service.score(body.scores, criteria)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return AssessResponse(total_score=result.total_score, breakdown=result.breakdown)
+
+    _store.update_assessment(body.candidate_id, {
+        "total_score": result.total_score,
+        "breakdown": result.breakdown,
+    })
+
+    return AssessResponse(
+        candidate_id=body.candidate_id,
+        total_score=result.total_score,
+        breakdown=result.breakdown,
+    )
+
+
+class BiasCheckTextRequest(BaseModel):
+    text: str = Field(..., example="Rejected due to lack of culture fit and aggressive communication style.")
+
+
+@router.post("/check-justification-bias")
+def check_justification_bias(body: BiasCheckTextRequest):
+    """Pre-check justification text for bias without recording any decision."""
+    result = _decision_service._bias_analyzer.analyse_rule_based(body.text)
+    return {
+        "flagged": result.flagged,
+        "flagged_phrases": [
+            {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
+            for fp in result.flagged_phrases
+        ],
+    }
 
 
 @router.post("/{candidate_id}/decide", response_model=DecideResponse)

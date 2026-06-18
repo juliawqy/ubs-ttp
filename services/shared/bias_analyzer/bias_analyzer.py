@@ -10,11 +10,11 @@ from shared.base.service import BaseService
 from shared.ai_client.abstract_client import AbstractAIClient
 
 DEFAULT_RULE_BASED_FLAGS: dict[str, str] = {
-    "rockstar": "Gendered/exclusionary tech jargon. Use 'high performer' instead.",
-    "ninja": "Exclusionary jargon. Use 'expert' or 'specialist' instead.",
-    "culture fit": "Vague and prone to affinity bias. Use 'values alignment' with specifics.",
-    "aggressive": "Gendered connotation. Use 'driven' or 'results-oriented' instead.",
-    "digital native": "Age-discriminatory. Specify the actual skill required instead.",
+    "rockstar": "Gendered/exclusionary tech jargon that can deter applicants. Replace with 'high performer' or 'exceptional contributor'",
+    "ninja": "Exclusionary jargon that may discourage diverse candidates. Replace with 'expert' or 'specialist'",
+    "culture fit": "Vague criterion that often means 'similar to us', creating affinity bias. Replace with specific behaviours e.g. 'collaborates across teams' or 'communicates decisions transparently'",
+    "aggressive": "Gendered connotation that can deter women from applying. Replace with 'driven', 'goal-oriented', or 'results-focused'",
+    "digital native": "Age-discriminatory language that excludes older workers. Name the actual skill required e.g. 'proficient with Slack and Jira'",
 }
 
 
