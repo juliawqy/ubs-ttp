@@ -38,6 +38,14 @@ class JobPostingCreate(BaseModel):
     manager: HiringManagerIn
 
 
+class JobPostingUpdate(BaseModel):
+    title: str
+    description: str
+    requirements: list[str]
+    department: str
+    manager: HiringManagerIn
+
+
 # ── routes ────────────────────────────────────────────────────────────────────
 
 @router.get("")
@@ -104,3 +112,57 @@ def get_job_posting(posting_id: str):
         raise HTTPException(status_code=404, detail="Job posting not found")
 
     return _store[pid]
+
+
+@router.put("/{posting_id}")
+def update_job_posting(posting_id: str, body: JobPostingUpdate):
+    try:
+        pid = int(posting_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Job posting not found")
+
+    if pid not in _store:
+        raise HTTPException(status_code=404, detail="Job posting not found")
+
+    request = JobPostingRequest(
+        title=body.title,
+        description=body.description,
+        requirements=body.requirements,
+        department=body.department,
+        manager=HiringManager(
+            id=body.manager.id,
+            name=body.manager.name,
+            department=body.manager.department,
+            email=body.manager.email,
+        ),
+    )
+
+    try:
+        result = _service.create_request(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    existing_status = _store[pid]["status"]
+    posting = {
+        "id": pid,
+        "title": result.title,
+        "description": result.description,
+        "requirements": result.requirements,
+        "department": result.department,
+        "manager": {
+            "id": result.manager.id,
+            "name": result.manager.name,
+            "department": result.manager.department,
+            "email": result.manager.email,
+        },
+        "status": existing_status,
+        "bias_check": {
+            "flagged": result.bias_check.flagged,
+            "flagged_phrases": [
+                {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
+                for fp in result.bias_check.flagged_phrases
+            ],
+        },
+    }
+    _store[pid] = posting
+    return posting

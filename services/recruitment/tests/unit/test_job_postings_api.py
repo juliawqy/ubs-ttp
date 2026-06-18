@@ -108,3 +108,57 @@ class TestGetJobPostings:
     def test_get_nonexistent_returns_404(self):
         response = client.get("/job-postings/nonexistent-id")
         assert response.status_code == 404
+
+
+class TestUpdateJobPosting:
+    def _create(self, payload=None):
+        response = client.post("/job-postings", json=payload or CLEAN_POSTING)
+        return response.json()["id"]
+
+    def test_update_returns_200(self):
+        pid = self._create()
+        updated = {**CLEAN_POSTING, "title": "Staff Python Engineer"}
+        response = client.put(f"/job-postings/{pid}", json=updated)
+        assert response.status_code == 200
+
+    def test_update_changes_fields(self):
+        pid = self._create()
+        updated = {**CLEAN_POSTING, "title": "Staff Python Engineer", "department": "Platform"}
+        response = client.put(f"/job-postings/{pid}", json=updated)
+        body = response.json()
+        assert body["title"] == "Staff Python Engineer"
+        assert body["department"] == "Platform"
+
+    def test_update_preserves_id(self):
+        pid = self._create()
+        response = client.put(f"/job-postings/{pid}", json=CLEAN_POSTING)
+        assert response.json()["id"] == pid
+
+    def test_update_preserves_existing_status(self):
+        """Editing a posting must not reset its workflow status back to pending."""
+        pid = self._create()
+        original_status = client.get(f"/job-postings/{pid}").json()["status"]
+        response = client.put(f"/job-postings/{pid}", json=CLEAN_POSTING)
+        assert response.json()["status"] == original_status
+
+    def test_update_runs_bias_check_on_new_content(self):
+        pid = self._create()
+        response = client.put(f"/job-postings/{pid}", json=BIASED_POSTING)
+        assert response.json()["bias_check"]["flagged"] is True
+
+    def test_update_persists_via_get(self):
+        pid = self._create()
+        updated = {**CLEAN_POSTING, "title": "Staff Python Engineer"}
+        client.put(f"/job-postings/{pid}", json=updated)
+        response = client.get(f"/job-postings/{pid}")
+        assert response.json()["title"] == "Staff Python Engineer"
+
+    def test_update_nonexistent_returns_404(self):
+        response = client.put("/job-postings/999999", json=CLEAN_POSTING)
+        assert response.status_code == 404
+
+    def test_update_missing_manager_returns_422(self):
+        pid = self._create()
+        payload = {k: v for k, v in CLEAN_POSTING.items() if k != "manager"}
+        response = client.put(f"/job-postings/{pid}", json=payload)
+        assert response.status_code == 422

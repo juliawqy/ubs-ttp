@@ -1,9 +1,9 @@
 """
-Panel assignment service — assigns diverse interview panels.
+Panel assignment service -- assigns diverse interview panels.
 Rejects panels that lack gender or department diversity.
 Bias mitigation: prevents homogeneous groups from making hiring decisions unchallenged.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from shared.base.service import BaseService
 
 
@@ -23,7 +23,9 @@ class PanelAssignment:
     rejection_reason: str | None = None
 
 
-MIN_PANEL_SIZE = 3  
+MIN_PANEL_SIZE = 3
+MIN_GENDER_COUNT = 2
+MIN_DEPT_COUNT = 2
 
 
 class PanelAssignmentService(BaseService):
@@ -34,12 +36,22 @@ class PanelAssignmentService(BaseService):
     (e.g. hiring manager, subject-matter expert). Remaining slots are filled
     from the pool to maximise gender and department diversity.
 
-    Diversity is checked on the full panel including mandatory members —
+    Diversity is checked on the full panel including mandatory members --
     the result is a suggestion; the final decision is always human-in-the-loop.
+
+    OCP: min_gender_count and min_dept_count are injectable so diversity
+    requirements can change without modifying this class.
     """
 
-    def __init__(self, min_panel_size: int = MIN_PANEL_SIZE):
+    def __init__(
+        self,
+        min_panel_size: int = MIN_PANEL_SIZE,
+        min_gender_count: int = MIN_GENDER_COUNT,
+        min_dept_count: int = MIN_DEPT_COUNT,
+    ):
         self._min_panel_size = min_panel_size
+        self._min_gender_count = min_gender_count
+        self._min_dept_count = min_dept_count
 
     def assign(
         self,
@@ -89,7 +101,7 @@ class PanelAssignmentService(BaseService):
             rejection_reason=rejection_reason,
         )
 
-    # ── internals ────────────────────────────────────────────────────────────
+    # -- internals ------------------------------------------------------------
 
     def _resolve_mandatory(
         self,
@@ -124,7 +136,7 @@ class PanelAssignmentService(BaseService):
 
         if len(pool) < panel_size:
             raise ValueError(
-                f"pool has {len(pool)} interviewers but panel_size is {panel_size} — "
+                f"pool has {len(pool)} interviewers but panel_size is {panel_size} -- "
                 "pool must be at least as large as the requested panel"
             )
 
@@ -173,16 +185,16 @@ class PanelAssignmentService(BaseService):
         genders = {i.gender for i in panel}
         departments = {i.department for i in panel}
 
-        if len(genders) < 2:
+        if len(genders) < self._min_gender_count:
             return (
-                f"Panel lacks gender diversity — all members identify as '{next(iter(genders))}'. "
-                "At least two genders must be represented."
+                f"Panel lacks gender diversity -- all members identify as '{next(iter(genders))}'. "
+                f"At least {self._min_gender_count} genders must be represented."
             )
 
-        if len(departments) < 2:
+        if len(departments) < self._min_dept_count:
             return (
-                f"Panel lacks department diversity — all members are from '{next(iter(departments))}'. "
-                "At least two departments must be represented."
+                f"Panel lacks department diversity -- all members are from '{next(iter(departments))}'. "
+                f"At least {self._min_dept_count} departments must be represented."
             )
 
         return None

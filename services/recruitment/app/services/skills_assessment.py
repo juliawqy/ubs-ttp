@@ -1,22 +1,15 @@
 """
-Skills assessment service — scores candidates against weighted criteria.
+Skills assessment service -- scores candidates against weighted criteria.
 No free-text gut-feel fields. Every score is explicit and auditable.
+
+ISP fix: AssessmentCriteria and CandidateScore have been moved to app.models
+so they can be imported by any layer (router, service, tests) without coupling
+to this service module.
 """
-from dataclasses import dataclass, field
 from shared.base.service import BaseService
+from app.models import AssessmentCriteria, CandidateScore
 
-
-@dataclass
-class AssessmentCriteria:
-    name: str
-    weight: float
-    required: bool
-
-
-@dataclass
-class CandidateScore:
-    total_score: float
-    breakdown: dict = field(default_factory=dict)
+__all__ = ["SkillsAssessmentService", "AssessmentCriteria", "CandidateScore"]
 
 
 class SkillsAssessmentService(BaseService):
@@ -48,12 +41,12 @@ class SkillsAssessmentService(BaseService):
 
         names = [c.name for c in criteria]
         if len(names) != len(set(names)):
-            raise ValueError("duplicate criteria names found — each skill must appear once")
+            raise ValueError("duplicate criteria names found -- each skill must appear once")
 
         for c in criteria:
             if c.weight <= 0:
                 raise ValueError(
-                    f"criterion '{c.name}' has invalid weight {c.weight} — must be > 0"
+                    f"criterion '{c.name}' has invalid weight {c.weight} -- must be > 0"
                 )
 
         total_weight = sum(c.weight for c in criteria)

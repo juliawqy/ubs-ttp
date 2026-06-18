@@ -8,7 +8,6 @@ const API_URL = process.env.API_URL || "http://localhost:8000";
 
 // Serve static files (CSS, client-side JS)
 app.use(express.static(path.join(__dirname, "../public")));
-app.use(express.json());
 
 // ── Pages ───────────────────────────────────────────────────────────────────
 app.get("/", (req, res) => {

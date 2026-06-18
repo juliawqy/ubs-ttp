@@ -108,6 +108,15 @@ nav a:hover, nav a.active { background: var(--mid); color: var(--white); }
 .btn-secondary { background: var(--dark); color: var(--white); }
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
 
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(40%);
+}
+.btn:disabled:hover,
+.btn[disabled]:hover { opacity: 0.4; }
+
 /* ─── Badges ─────────────────────────────────────────────────────────────────── */
 .badge {
   display: inline-block;

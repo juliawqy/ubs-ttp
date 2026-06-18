@@ -1,18 +1,20 @@
 """
-Bias analyser — checks text for potentially biased language.
+Bias analyser -- checks text for potentially biased language.
 Used by: recruitment (justification check), performance (review check).
 AI is called only when rule-based checks are insufficient.
 """
+from __future__ import annotations
+
 from .models import BiasAnalysisResult, FlaggedPhrase
 from shared.base.service import BaseService
+from shared.ai_client.abstract_client import AbstractAIClient
 
-# Rule-based patterns checked before AI is invoked (cheaper, deterministic)
-RULE_BASED_FLAGS = {
-    "rockstar": "Gendered/exclusionary tech jargon. Use 'high performer' instead.",
-    "ninja": "Exclusionary jargon. Use 'expert' or 'specialist' instead.",
-    "culture fit": "Vague and prone to affinity bias. Use 'values alignment' with specifics.",
-    "aggressive": "Gendered connotation. Use 'driven' or 'results-oriented' instead.",
-    "digital native": "Age-discriminatory. Specify the actual skill required instead.",
+DEFAULT_RULE_BASED_FLAGS: dict[str, str] = {
+    "rockstar": "Gendered/exclusionary tech jargon that can deter applicants. Replace with 'high performer' or 'exceptional contributor'",
+    "ninja": "Exclusionary jargon that may discourage diverse candidates. Replace with 'expert' or 'specialist'",
+    "culture fit": "Vague criterion that often means 'similar to us', creating affinity bias. Replace with specific behaviours e.g. 'collaborates across teams' or 'communicates decisions transparently'",
+    "aggressive": "Gendered connotation that can deter women from applying. Replace with 'driven', 'goal-oriented', or 'results-focused'",
+    "digital native": "Age-discriminatory language that excludes older workers. Name the actual skill required e.g. 'proficient with Slack and Jira'",
 }
 
 
@@ -20,10 +22,21 @@ class BiasAnalyzer(BaseService):
     """
     Analyses text for biased language.
     Strategy: rule-based first, AI only if needed and explicitly requested.
+
+    Args:
+        rules: mapping of {phrase: "reason. suggestion"} to flag.
+               Defaults to DEFAULT_RULE_BASED_FLAGS. Pass a custom dict to
+               extend or replace patterns without subclassing (OCP).
+        ai_client: optional AbstractAIClient implementation for deep analysis.
+                   Injected, never created here (DIP / testability).
     """
 
-    def __init__(self, ai_client=None):
-        # ai_client is optional — injected, not created here (DI / testability)
+    def __init__(
+        self,
+        rules: dict[str, str] | None = None,
+        ai_client: AbstractAIClient | None = None,
+    ):
+        self._rules = rules if rules is not None else DEFAULT_RULE_BASED_FLAGS
         self._ai_client = ai_client
 
     def analyse_rule_based(self, text: str) -> BiasAnalysisResult:
@@ -34,7 +47,7 @@ class BiasAnalyzer(BaseService):
         flagged_phrases = []
         lower_text = text.lower()
 
-        for phrase, reason_and_suggestion in RULE_BASED_FLAGS.items():
+        for phrase, reason_and_suggestion in self._rules.items():
             if phrase in lower_text:
                 parts = reason_and_suggestion.split(". ", 1)
                 flagged_phrases.append(FlaggedPhrase(
