@@ -138,7 +138,9 @@ class TestCandidateGet:
 
 class TestCandidateAssessment:
     def test_assess_candidate_returns_200(self):
+        cid = _upload_candidate()
         payload = {
+            "candidate_id": cid,
             "criteria": [
                 {"name": "python", "weight": 0.6, "required": True},
                 {"name": "sql", "weight": 0.4, "required": True},
@@ -149,7 +151,9 @@ class TestCandidateAssessment:
         assert response.status_code == 200
 
     def test_assess_returns_total_score(self):
+        cid = _upload_candidate()
         payload = {
+            "candidate_id": cid,
             "criteria": [
                 {"name": "python", "weight": 0.6, "required": True},
                 {"name": "sql", "weight": 0.4, "required": True},
@@ -160,12 +164,78 @@ class TestCandidateAssessment:
         assert "total_score" in response.json()
 
     def test_assess_missing_required_skill_returns_422(self):
+        cid = _upload_candidate()
         payload = {
+            "candidate_id": cid,
             "criteria": [{"name": "python", "weight": 1.0, "required": True}],
             "scores": {},
         }
         response = client.post("/candidates/assess", json=payload)
         assert response.status_code == 422
+
+    def test_assess_missing_candidate_id_returns_422(self):
+        payload = {
+            "criteria": [{"name": "python", "weight": 1.0, "required": True}],
+            "scores": {"python": 8},
+        }
+        response = client.post("/candidates/assess", json=payload)
+        assert response.status_code == 422
+
+    def test_assess_unknown_candidate_returns_404(self):
+        payload = {
+            "candidate_id": 999999,
+            "criteria": [{"name": "python", "weight": 1.0, "required": True}],
+            "scores": {"python": 8},
+        }
+        response = client.post("/candidates/assess", json=payload)
+        assert response.status_code == 404
+
+    def test_assess_after_decision_returns_409(self):
+        """Assessment is locked once a hire/reject decision has been recorded."""
+        cid = _upload_candidate()
+        client.post(
+            f"/candidates/{cid}/decide",
+            json={"decision": "hired", "justification": "Strong all-round candidate."},
+        )
+        payload = {
+            "candidate_id": cid,
+            "criteria": [{"name": "python", "weight": 1.0, "required": True}],
+            "scores": {"python": 8},
+        }
+        response = client.post("/candidates/assess", json=payload)
+        assert response.status_code == 409
+
+    def test_assessment_score_persisted_on_candidate(self):
+        cid = _upload_candidate()
+        payload = {
+            "candidate_id": cid,
+            "criteria": [{"name": "python", "weight": 1.0, "required": True}],
+            "scores": {"python": 9},
+        }
+        assess_response = client.post("/candidates/assess", json=payload)
+        expected_score = assess_response.json()["total_score"]
+
+        get_response = client.get(f"/candidates/{cid}")
+        latest_assessment = get_response.json()["latest_assessment"]
+        assert latest_assessment is not None
+        assert latest_assessment["total_score"] == expected_score
+
+    def test_only_most_recent_assessment_score_is_kept(self):
+        cid = _upload_candidate()
+        first = {
+            "candidate_id": cid,
+            "criteria": [{"name": "python", "weight": 1.0, "required": True}],
+            "scores": {"python": 2},
+        }
+        second = {
+            "candidate_id": cid,
+            "criteria": [{"name": "python", "weight": 1.0, "required": True}],
+            "scores": {"python": 9},
+        }
+        client.post("/candidates/assess", json=first)
+        client.post("/candidates/assess", json=second)
+        response = client.get(f"/candidates/{cid}")
+        assert response.json()["latest_assessment"]["total_score"] == 9.0
 
 
 # -- decide -------------------------------------------------------------------
