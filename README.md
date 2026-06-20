@@ -1,4 +1,4 @@
-# UBS TTP — Bias Mitigation Platform
+# Aequus — Bias Mitigation Platform
 
 A platform to help managers identify and address unconscious bias in hiring, promotion, and team dynamics.
 

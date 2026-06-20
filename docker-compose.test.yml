@@ -1,12 +1,14 @@
 version: "3.9"
 
+name: aequus-test
+
 services:
   postgres-test:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ubs_ttp_test
+      POSTGRES_USER: aequus_test
       POSTGRES_PASSWORD: testpassword
-      POSTGRES_DB: ubs_ttp_test
+      POSTGRES_DB: aequus_test
     ports:
       - "5433:5432"
 

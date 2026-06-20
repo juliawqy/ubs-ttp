@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="ubs-ttp-analytics", version="0.1.0")
+app = FastAPI(title="aequus-analytics", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

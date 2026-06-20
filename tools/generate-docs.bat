@@ -18,8 +18,8 @@ if %errorlevel% neq 0 (
 echo [3/4] Copying docs out of container...
 if not exist docs\generated\shared mkdir docs\generated\shared
 if not exist docs\generated\recruitment mkdir docs\generated\recruitment
-docker cp ubs-ttp-recruitment-1:/tmp/shared-docs/. docs/generated/shared
-docker cp ubs-ttp-recruitment-1:/tmp/docs/. docs/generated/recruitment
+docker cp aequus-recruitment-1:/tmp/shared-docs/. docs/generated/shared
+docker cp aequus-recruitment-1:/tmp/docs/. docs/generated/recruitment
 
 echo [4/4] Done!
 echo.
