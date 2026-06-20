@@ -7,10 +7,10 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "ubs-ttp-tfstate-production"
+    bucket         = "aequus-tfstate-production"
     key            = "global/terraform.tfstate"
     region         = "ap-southeast-1"
-    dynamodb_table = "ubs-ttp-tfstate-lock"
+    dynamodb_table = "aequus-tfstate-lock"
     encrypt        = true
   }
 }

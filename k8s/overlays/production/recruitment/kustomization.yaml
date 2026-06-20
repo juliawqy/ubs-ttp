@@ -1,11 +1,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: ubs-ttp-production
+namespace: aequus-production
 resources:
   - ../../../base/recruitment
 images:
   - name: PLACEHOLDER
-    newName: ${AWS_ACCOUNT_ID}.dkr.ecr.ap-southeast-1.amazonaws.com/ubs-ttp-recruitment
+    newName: ${AWS_ACCOUNT_ID}.dkr.ecr.ap-southeast-1.amazonaws.com/aequus-recruitment
     newTag: latest  # replaced by CI pipeline
 patches:
   - patch: |-

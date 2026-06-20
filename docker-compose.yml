@@ -1,12 +1,14 @@
 version: "3.9"
 
+name: aequus
+
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ubs_ttp
+      POSTGRES_USER: aequus
       POSTGRES_PASSWORD: localpassword
-      POSTGRES_DB: ubs_ttp
+      POSTGRES_DB: aequus
     ports:
       - "5432:5432"
     volumes:

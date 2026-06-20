@@ -1,7 +1,7 @@
 {
-  "name": "ubs-ttp-frontend",
+  "name": "aequus-frontend",
   "version": "0.1.0",
-  "description": "UBS TTP Bias Mitigation Platform - Frontend",
+  "description": "Aequus Bias Mitigation Platform - Frontend",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
