@@ -20,6 +20,27 @@ def _complete_session(session_id, employee_id="emp-1"):
     return client.post(f"/training/iat/sessions/{session_id}/complete").json()
 
 
+class TestGetCategories:
+    def test_returns_200(self):
+        response = client.get("/training/iat/categories")
+        assert response.status_code == 200
+
+    def test_returns_a_nonempty_list(self):
+        categories = client.get("/training/iat/categories").json()
+        assert isinstance(categories, list)
+        assert len(categories) >= 1
+
+    def test_category_shape_has_expected_fields(self):
+        categories = client.get("/training/iat/categories").json()
+        category = categories[0]
+        assert set(category.keys()) == {"id", "label", "pole_a", "pole_b", "stimuli"}
+
+    def test_includes_the_stub_decision_style_category(self):
+        categories = client.get("/training/iat/categories").json()
+        ids = [c["id"] for c in categories]
+        assert "decision-style" in ids
+
+
 class TestStartSession:
     def test_start_returns_201(self):
         response = client.post("/training/iat/sessions", json={"employee_id": "emp-1"})

@@ -1,5 +1,6 @@
 """
 Implicit Association Test (IAT) router.
+GET  /training/iat/categories                     -- list available test categories
 POST /training/iat/sessions                      -- start a session
 POST /training/iat/sessions/{id}/responses        -- submit one response
 POST /training/iat/sessions/{id}/complete         -- finish and score a session
@@ -11,10 +12,12 @@ the test can read it, never their manager or HR.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.services.iat import IATService, IATSession, IATResult
+from app.services.iat_categories import IATCategoryCatalog, IATCategory
 
 router = APIRouter(prefix="/training/iat", tags=["iat"])
 
 _service = IATService()
+_categories_catalog = IATCategoryCatalog()
 
 
 class IATSessionStore:
@@ -71,6 +74,21 @@ def _result_to_dict(result: IATResult) -> dict:
         "employee_id": result.employee_id,
         "category_scores": result.category_scores,
     }
+
+
+def _category_to_dict(category: IATCategory) -> dict:
+    return {
+        "id": category.id,
+        "label": category.label,
+        "pole_a": category.pole_a,
+        "pole_b": category.pole_b,
+        "stimuli": category.stimuli,
+    }
+
+
+@router.get("/categories")
+def list_categories():
+    return [_category_to_dict(c) for c in _categories_catalog.get_categories()]
 
 
 @router.post("/sessions", status_code=201)
