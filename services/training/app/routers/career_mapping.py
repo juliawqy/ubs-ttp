@@ -13,6 +13,8 @@ router = APIRouter(prefix="/training/career-mapping", tags=["career mapping"])
 
 _service = CareerPathService()
 
+_ENTRY_NOT_FOUND = "Career path entry not found"
+
 # -- in-memory store ------------------------------------------------------------
 _store: dict[int, dict] = {}
 _next_id = 1
@@ -47,7 +49,7 @@ def _build_entry(entry_id: int, result) -> dict:
 
 # -- routes -----------------------------------------------------------------------
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, responses={422: {"description": "Invalid career path request"}})
 def create_entry(body: CareerPathCreate):
     global _next_id
 
@@ -68,17 +70,23 @@ def list_entries():
     return list(_store.values())
 
 
-@router.get("/{entry_id}")
+@router.get("/{entry_id}", responses={404: {"description": _ENTRY_NOT_FOUND}})
 def get_entry(entry_id: int):
     if entry_id not in _store:
-        raise HTTPException(status_code=404, detail="Career path entry not found")
+        raise HTTPException(status_code=404, detail=_ENTRY_NOT_FOUND)
     return _store[entry_id]
 
 
-@router.put("/{entry_id}")
+@router.put(
+    "/{entry_id}",
+    responses={
+        404: {"description": _ENTRY_NOT_FOUND},
+        422: {"description": "Invalid career path request"},
+    },
+)
 def update_entry(entry_id: int, body: CareerPathUpdate):
     if entry_id not in _store:
-        raise HTTPException(status_code=404, detail="Career path entry not found")
+        raise HTTPException(status_code=404, detail=_ENTRY_NOT_FOUND)
 
     request = CareerPathRequest(**body.model_dump())
     try:
@@ -91,8 +99,8 @@ def update_entry(entry_id: int, body: CareerPathUpdate):
     return entry
 
 
-@router.delete("/{entry_id}", status_code=204)
+@router.delete("/{entry_id}", status_code=204, responses={404: {"description": _ENTRY_NOT_FOUND}})
 def delete_entry(entry_id: int):
     if entry_id not in _store:
-        raise HTTPException(status_code=404, detail="Career path entry not found")
+        raise HTTPException(status_code=404, detail=_ENTRY_NOT_FOUND)
     del _store[entry_id]

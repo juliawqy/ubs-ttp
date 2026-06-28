@@ -21,6 +21,8 @@ router = APIRouter(prefix="/training/modules", tags=["training modules"])
 _service = TrainingModuleService()
 _tracker = ProgressTrackerService()
 
+_MODULE_NOT_FOUND = "Training module not found"
+
 
 # -- in-memory store ------------------------------------------------------------
 
@@ -88,7 +90,7 @@ def _to_dict(module: TrainingModule) -> dict:
 
 # -- routes -----------------------------------------------------------------------
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, responses={422: {"description": "Invalid module request"}})
 def create_module(body: ModuleCreate):
     request = ModuleRequest(
         title=body.title,
@@ -119,19 +121,25 @@ def list_modules():
     return [_to_dict(m) for m in _store.list_all()]
 
 
-@router.get("/{module_id}")
+@router.get("/{module_id}", responses={404: {"description": _MODULE_NOT_FOUND}})
 def get_module(module_id: int):
     module = _store.get(module_id)
     if module is None:
-        raise HTTPException(status_code=404, detail="Training module not found")
+        raise HTTPException(status_code=404, detail=_MODULE_NOT_FOUND)
     return _to_dict(module)
 
 
-@router.put("/{module_id}")
+@router.put(
+    "/{module_id}",
+    responses={
+        404: {"description": _MODULE_NOT_FOUND},
+        422: {"description": "Invalid module request"},
+    },
+)
 def update_module(module_id: int, body: ModuleUpdate):
     existing = _store.get(module_id)
     if existing is None:
-        raise HTTPException(status_code=404, detail="Training module not found")
+        raise HTTPException(status_code=404, detail=_MODULE_NOT_FOUND)
 
     request = ModuleRequest(
         title=body.title,
@@ -160,17 +168,23 @@ def update_module(module_id: int, body: ModuleUpdate):
     return _to_dict(updated)
 
 
-@router.delete("/{module_id}", status_code=204)
+@router.delete("/{module_id}", status_code=204, responses={404: {"description": _MODULE_NOT_FOUND}})
 def delete_module(module_id: int):
     if not _store.delete(module_id):
-        raise HTTPException(status_code=404, detail="Training module not found")
+        raise HTTPException(status_code=404, detail=_MODULE_NOT_FOUND)
 
 
-@router.patch("/{module_id}/progress")
+@router.patch(
+    "/{module_id}/progress",
+    responses={
+        404: {"description": _MODULE_NOT_FOUND},
+        422: {"description": "Invalid completion percentage"},
+    },
+)
 def update_progress(module_id: int, body: ProgressUpdate):
     existing = _store.get(module_id)
     if existing is None:
-        raise HTTPException(status_code=404, detail="Training module not found")
+        raise HTTPException(status_code=404, detail=_MODULE_NOT_FOUND)
 
     try:
         updated = _tracker.update_completion(existing, body.completion_pct)
@@ -181,11 +195,17 @@ def update_progress(module_id: int, body: ProgressUpdate):
     return _to_dict(updated)
 
 
-@router.post("/{module_id}/remind")
+@router.post(
+    "/{module_id}/remind",
+    responses={
+        404: {"description": _MODULE_NOT_FOUND},
+        409: {"description": "No reminder is due for this module"},
+    },
+)
 def remind(module_id: int):
     existing = _store.get(module_id)
     if existing is None:
-        raise HTTPException(status_code=404, detail="Training module not found")
+        raise HTTPException(status_code=404, detail=_MODULE_NOT_FOUND)
 
     if not _tracker.should_remind(existing, date.today()):
         raise HTTPException(status_code=409, detail="No reminder is due for this module")

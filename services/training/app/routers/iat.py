@@ -19,6 +19,8 @@ router = APIRouter(prefix="/training/iat", tags=["iat"])
 _service = IATService()
 _categories_catalog = IATCategoryCatalog()
 
+_SESSION_NOT_FOUND = "IAT session not found"
+
 
 class IATSessionStore:
     """Owns session/result persistence only. Swap for a DB-backed impl without touching the router."""
@@ -91,7 +93,7 @@ def list_categories():
     return [_category_to_dict(c) for c in _categories_catalog.get_categories()]
 
 
-@router.post("/sessions", status_code=201)
+@router.post("/sessions", status_code=201, responses={422: {"description": "Invalid session request"}})
 def start_session(body: SessionCreate):
     session_id = _store.reserve_id()
     try:
@@ -103,11 +105,17 @@ def start_session(body: SessionCreate):
     return _session_to_dict(session)
 
 
-@router.post("/sessions/{session_id}/responses")
+@router.post(
+    "/sessions/{session_id}/responses",
+    responses={
+        404: {"description": _SESSION_NOT_FOUND},
+        422: {"description": "Invalid response (e.g. unknown pole, or session already completed)"},
+    },
+)
 def submit_response(session_id: int, body: ResponseSubmit):
     session = _store.get_session(session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="IAT session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
 
     try:
         _service.submit_response(
@@ -119,11 +127,17 @@ def submit_response(session_id: int, body: ResponseSubmit):
     return _session_to_dict(session)
 
 
-@router.post("/sessions/{session_id}/complete")
+@router.post(
+    "/sessions/{session_id}/complete",
+    responses={
+        404: {"description": _SESSION_NOT_FOUND},
+        422: {"description": "Session has no responses, or is already complete"},
+    },
+)
 def complete_session(session_id: int):
     session = _store.get_session(session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="IAT session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
 
     try:
         result = _service.complete_session(session)
@@ -134,12 +148,19 @@ def complete_session(session_id: int):
     return _result_to_dict(result)
 
 
-@router.get("/sessions/{session_id}/result")
+@router.get(
+    "/sessions/{session_id}/result",
+    responses={
+        403: {"description": "Result is private to the employee who took the test"},
+        404: {"description": _SESSION_NOT_FOUND},
+        409: {"description": "This session has not been completed yet"},
+    },
+)
 def get_result(session_id: int, employee_id: str):
     result = _store.get_result(session_id)
     if result is None:
         if _store.get_session(session_id) is None:
-            raise HTTPException(status_code=404, detail="IAT session not found")
+            raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
         raise HTTPException(status_code=409, detail="This session has not been completed yet")
 
     try:
