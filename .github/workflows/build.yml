@@ -12,7 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          fetch-depth: 0  
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        shell: bash
+        run: |
+          pip install -r services/shared/requirements.txt
+          pip install -r services/recruitment/requirements.txt
+          pip install -r services/training/requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+      - name: Test + coverage (recruitment)
+        shell: bash
+        run: PYTHONPATH=services pytest services/recruitment/tests -v --cov=services/recruitment --cov-report=xml:coverage-recruitment.xml
+      - name: Test + coverage (training)
+        shell: bash
+        run: PYTHONPATH=services pytest services/training/tests -v --cov=services/training --cov-report=xml:coverage-training.xml
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:

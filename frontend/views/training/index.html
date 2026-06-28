@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Training – Aequus</title>
   <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:#fff; border-radius:8px; padding:2rem; width:90%; max-width:600px; max-height:90vh; overflow-y:auto; }
+    .modal h2 { margin:0 0 1.5rem; font-size:1.2rem; }
+    .form-row { margin-bottom:1rem; }
+    .form-row label { display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.3rem; color:#374151; }
+    .form-row input, .form-row textarea, .form-row select { width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:4px; font-size:0.9rem; box-sizing:border-box; }
+    .form-row textarea { resize:vertical; min-height:70px; }
+    .form-error { color:#ef4444; font-size:0.85rem; margin-top:0.5rem; display:none; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem; }
+    .skill-tag { display:inline-block; background:#f3f4f6; color:#374151; border-radius:999px; padding:0.15rem 0.6rem; font-size:0.75rem; margin:0.1rem 0.2rem 0.1rem 0; }
+    .iat-progress { font-size:0.8rem; color:#6b7280; text-align:center; margin-bottom:0.5rem; }
+    .iat-stimulus { font-size:1.8rem; font-weight:700; text-align:center; padding:2.5rem 0; color:#1a1a2e; }
+    .iat-pole-btn { flex:1; padding:1.25rem; font-size:1rem; }
+  </style>
 </head>
 <body>
   <nav>
@@ -34,12 +50,15 @@
         <div class="card-title">Assigned Modules</div>
         <table>
           <thead>
-            <tr><th>Module</th><th>Assigned To</th><th>Due</th><th>Completion</th><th>Action</th></tr>
+            <tr><th>Module</th><th>Assigned To</th><th>Due</th><th>Completion</th><th>Actions</th></tr>
           </thead>
           <tbody id="modules-tbody">
             <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
           </tbody>
         </table>
+        <div style="margin-top:1rem">
+          <button class="btn btn-primary" id="new-module-btn">+ New Module</button>
+        </div>
       </div>
     </div>
 
@@ -50,7 +69,39 @@
         <p style="font-size:0.9rem;color:#6b7280;margin-bottom:1rem">
           This test runs in a private sandbox. Results are visible only to you and are never shared with HR or used in your own performance review.
         </p>
-        <button class="btn btn-primary" id="start-iat-btn">Start Private Session</button>
+
+        <p class="form-error" id="iat-error"></p>
+
+        <div id="iat-intro">
+          <div class="form-row" style="max-width:280px">
+            <label for="iat-employee-id">Your Employee ID</label>
+            <input type="text" id="iat-employee-id" placeholder="e.g. emp-1" />
+          </div>
+          <p class="form-error" id="iat-start-error"></p>
+          <button class="btn btn-primary" id="start-iat-btn">Start Private Session</button>
+        </div>
+
+        <div id="iat-trial" style="display:none">
+          <p class="iat-progress" id="iat-progress-label"></p>
+          <p style="text-align:center;font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem" id="iat-category-label"></p>
+          <div class="iat-stimulus" id="iat-stimulus"></div>
+          <div style="display:flex;gap:1rem">
+            <button class="btn btn-outline iat-pole-btn" id="iat-pole-a-btn"></button>
+            <button class="btn btn-outline iat-pole-btn" id="iat-pole-b-btn"></button>
+          </div>
+        </div>
+
+        <div id="iat-result" style="display:none">
+          <p style="font-size:0.9rem;margin-bottom:1rem">Your results — visible only to you:</p>
+          <table>
+            <thead><tr><th>Category</th><th>Response-Time Lean</th></tr></thead>
+            <tbody id="iat-result-tbody"></tbody>
+          </table>
+          <p style="font-size:0.8rem;color:#6b7280;margin-top:0.75rem">
+            Faster or slower doesn't mean better or worse — this simply reflects which classification felt quicker for you in the moment. It is not a measure of skill or character, and it stays private to you.
+          </p>
+          <button class="btn btn-outline" id="iat-retake-btn" style="margin-top:1rem">Take Again</button>
+        </div>
       </div>
     </div>
 
@@ -60,13 +111,56 @@
         <div class="card-title">Team Career Paths</div>
         <table>
           <thead>
-            <tr><th>Employee</th><th>Current Role</th><th>Next Milestone</th><th>Timeline</th><th>Edit</th></tr>
+            <tr><th>Employee</th><th>Current Role</th><th>Next Milestone</th><th>Timeline</th><th>Recommended Skills</th><th>Actions</th></tr>
           </thead>
           <tbody id="career-tbody">
-            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:#6b7280">Loading...</td></tr>
           </tbody>
         </table>
+        <div style="margin-top:1rem">
+          <button class="btn btn-primary" id="new-career-btn">+ New Entry</button>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal: New / Edit Module -->
+  <div class="modal-overlay" id="module-modal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2 id="module-modal-title">New Training Module</h2>
+      <form id="module-form" novalidate>
+        <div class="form-row"><label for="module-title">Title *</label><input type="text" id="module-title" name="title" required /></div>
+        <div class="form-row"><label for="module-assigned-to">Assigned To *</label><input type="text" id="module-assigned-to" name="assigned_to" placeholder="e.g. emp-1" required /></div>
+        <div class="form-row"><label for="module-due-date">Due Date *</label><input type="date" id="module-due-date" name="due_date" required /></div>
+        <div class="form-row"><label for="module-description">Description</label><textarea id="module-description" name="description" rows="3"></textarea></div>
+        <div class="form-row" id="module-progress-row" style="display:none">
+          <label for="module-progress">Completion %</label>
+          <input type="number" id="module-progress" name="completion_pct" min="0" max="100" step="1" />
+        </div>
+        <p class="form-error" id="module-form-error"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="module-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="module-modal-submit">Create Module</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: New / Edit Career Entry -->
+  <div class="modal-overlay" id="career-modal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2 id="career-modal-title">New Career Path Entry</h2>
+      <form id="career-form" novalidate>
+        <div class="form-row"><label for="career-employee-name">Employee Name *</label><input type="text" id="career-employee-name" name="employee_name" required /></div>
+        <div class="form-row"><label for="career-current-role">Current Role *</label><input type="text" id="career-current-role" name="current_role" placeholder="e.g. software engineer" required /></div>
+        <div class="form-row"><label for="career-next-milestone">Next Milestone *</label><input type="text" id="career-next-milestone" name="next_milestone" placeholder="e.g. senior software engineer" required /></div>
+        <div class="form-row"><label for="career-target-date">Target Date *</label><input type="date" id="career-target-date" name="target_date" required /></div>
+        <p class="form-error" id="career-form-error"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="career-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="career-modal-submit">Create Entry</button>
+        </div>
+      </form>
     </div>
   </div>
 

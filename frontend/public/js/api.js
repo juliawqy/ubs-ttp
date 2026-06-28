@@ -18,6 +18,7 @@ async function apiFetch(path, options = {}) {
       : (detail || 'API error');
     throw new Error(message);
   }
+  if (res.status === 204) return null;
   return res.json();
 }
 
@@ -26,6 +27,7 @@ const api = {
   get: (path) => apiFetch(path),
   post: (path, body) => apiFetch(path, { method: "POST", body: JSON.stringify(body) }),
   put: (path, body) => apiFetch(path, { method: "PUT", body: JSON.stringify(body) }),
+  patch: (path, body) => apiFetch(path, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (path) => apiFetch(path, { method: "DELETE" }),
 };
 
