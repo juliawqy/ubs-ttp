@@ -141,7 +141,7 @@ def get_rubric():
     }
 
 
-@router.get("/{review_id}")
+@router.get("/{review_id}", responses={404: {"description": "Review not found"}})
 def get_review(review_id: int):
     review = _store.get(review_id)
     if review is None:
