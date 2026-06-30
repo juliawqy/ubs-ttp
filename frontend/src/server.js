@@ -6,6 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const API_URL = process.env.API_URL || "http://localhost:8000";
 const TRAINING_API_URL = process.env.TRAINING_API_URL || "http://localhost:8002";
+const PERFORMANCE_API_URL = process.env.PERFORMANCE_API_URL || "http://localhost:8003";
 
 // Serve static files (CSS, client-side JS)
 app.use(express.static(path.join(__dirname, "../public")));
@@ -51,6 +52,15 @@ app.use(
     target: TRAINING_API_URL,
     changeOrigin: true,
     pathRewrite: { "^/": "/training/" },
+  })
+);
+
+app.use(
+  "/api/performance",
+  createProxyMiddleware({
+    target: PERFORMANCE_API_URL,
+    changeOrigin: true,
+    pathRewrite: { "^/api/performance": "" },
   })
 );
 

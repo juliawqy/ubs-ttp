@@ -5,6 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Performance – Aequus</title>
   <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:#fff; border-radius:8px; padding:2rem; width:90%; max-width:640px; max-height:90vh; overflow-y:auto; }
+    .modal h2 { margin:0 0 1.5rem; font-size:1.2rem; }
+    .form-row { margin-bottom:1rem; }
+    .form-row label { display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.3rem; color:#374151; }
+    .form-row input, .form-row textarea { width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:4px; font-size:0.9rem; box-sizing:border-box; }
+    .form-row textarea { resize:vertical; min-height:70px; }
+    .form-error { color:#ef4444; font-size:0.85rem; margin-top:0.5rem; display:none; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem; }
+    .hint { font-size:0.78rem; color:#6b7280; margin-top:0.25rem; }
+    .form-section-label { font-size:0.78rem; font-weight:600; color:#6b7280; text-transform:uppercase; margin:1.25rem 0 0.5rem; border-top:1px solid #e5e7eb; padding-top:1rem; }
+    .rubric-row { margin-bottom:1.1rem; }
+    .rubric-row-head { display:flex; justify-content:space-between; align-items:flex-start; gap:0.75rem; margin-bottom:0.35rem; }
+    .rubric-row-head label { font-weight:600; font-size:0.88rem; color:#374151; }
+    .rubric-row-head .rubric-desc { font-size:0.78rem; color:#6b7280; font-weight:400; display:block; margin-top:0.1rem; }
+    .rubric-row-head input[type=number] { width:64px; padding:0.3rem 0.5rem; border:1px solid #d1d5db; border-radius:4px; text-align:center; flex-shrink:0; }
+    .rubric-row textarea { width:100%; box-sizing:border-box; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:4px; font-size:0.85rem; resize:vertical; min-height:50px; }
+    .breakdown-table { width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:0.75rem; }
+    .breakdown-table th, .breakdown-table td { padding:0.4rem 0.6rem; border:1px solid #e5e7eb; text-align:left; }
+    .breakdown-table th { background:#f9fafb; }
+  </style>
 </head>
 <body>
   <nav>
@@ -26,38 +49,17 @@
     <!-- Tab: Reviews -->
     <div id="tab-reviews">
       <div class="card">
-        <div class="card-title">Current Review Cycle</div>
+        <div class="card-title">Submitted Reviews</div>
         <table>
           <thead>
-            <tr><th>Employee</th><th>Role</th><th>Status</th><th>Bias Score</th><th>Action</th></tr>
+            <tr><th>Employee</th><th>Reviewer</th><th>Average Score</th><th>Bias Notes</th><th>Actions</th></tr>
           </thead>
           <tbody id="reviews-tbody">
             <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
           </tbody>
         </table>
-      </div>
-
-      <!-- Review editor (shown when editing a review) -->
-      <div id="review-editor" style="display:none">
-        <div class="card">
-          <div class="card-title">Write Review</div>
-          <div class="form-group">
-            <label>Performance Score (1–5)</label>
-            <input type="number" id="review-score" min="1" max="5" />
-          </div>
-          <div class="form-group">
-            <label>Justification</label>
-            <textarea id="review-text" rows="5" placeholder="Describe observable behaviours and evidence…"></textarea>
-          </div>
-          <div id="ai-feedback" class="ai-banner" style="display:none">
-            <div class="ai-label">AI – Bias Detection</div>
-            <div id="ai-feedback-text"></div>
-          </div>
-          <div style="display:flex;gap:0.75rem;margin-top:1rem">
-            <button class="btn btn-primary" id="check-bias-btn">Check for Bias</button>
-            <button class="btn btn-secondary" id="submit-review-btn">Submit Review</button>
-            <button class="btn btn-outline" id="cancel-review-btn">Cancel</button>
-          </div>
+        <div style="margin-top:1rem">
+          <button class="btn btn-primary" id="new-review-btn">+ New Review</button>
         </div>
       </div>
     </div>
@@ -65,15 +67,92 @@
     <!-- Tab: Employee Feedback -->
     <div id="tab-feedback" style="display:none">
       <div class="card">
-        <div class="card-title">Feedback Received</div>
-        <table>
-          <thead>
-            <tr><th>From</th><th>Submitted</th><th>Theme</th><th>Sentiment</th><th>View</th></tr>
-          </thead>
-          <tbody id="feedback-tbody">
-            <tr><td colspan="5" style="text-align:center;color:#6b7280">Loading...</td></tr>
-          </tbody>
+        <div class="card-title">Submit 360 Feedback</div>
+        <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">
+          Your identity is never shown alongside this feedback — the employee only ever sees an
+          anonymised, aggregated list of comments.
+        </p>
+        <form id="feedback-form" novalidate>
+          <div class="form-row"><label for="feedback-employee-id">About Employee *</label><input type="text" id="feedback-employee-id" name="employee_id" placeholder="e.g. emp-1" required /></div>
+          <div class="form-row"><label for="feedback-rater-id">Your Employee ID *</label><input type="text" id="feedback-rater-id" name="rater_id" placeholder="e.g. emp-2" required /></div>
+          <div class="form-row"><label for="feedback-comments">Comments *</label><textarea id="feedback-comments" name="comments" rows="4" placeholder="Describe observable behaviours and evidence…" required></textarea></div>
+          <p class="form-error" id="feedback-form-error"></p>
+          <p id="feedback-form-success" style="display:none;color:#22c55e;font-size:0.85rem;margin-top:0.5rem">Feedback submitted — thank you.</p>
+          <div style="margin-top:1rem">
+            <button type="submit" class="btn btn-primary" id="feedback-submit-btn">Submit Feedback</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">View Aggregated Feedback</div>
+        <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">
+          Shows every comment submitted about an employee, combined into one anonymised list —
+          there is no field anywhere that identifies who wrote which comment.
+        </p>
+        <div style="display:flex;gap:0.75rem;align-items:flex-end;margin-bottom:1rem">
+          <div class="form-row" style="margin-bottom:0;flex:1;max-width:280px">
+            <label for="feedback-lookup-id">Employee ID</label>
+            <input type="text" id="feedback-lookup-id" placeholder="e.g. emp-1" />
+          </div>
+          <button class="btn btn-outline" id="feedback-lookup-btn">View Feedback</button>
+        </div>
+        <p class="form-error" id="feedback-lookup-error"></p>
+        <div id="feedback-lookup-result" style="display:none">
+          <p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem">
+            <span id="feedback-lookup-count"></span> comment(s) — anonymised, no rater identity attached
+          </p>
+          <ul id="feedback-lookup-list" style="margin:0;padding-left:1.2rem;line-height:1.6;font-size:0.88rem"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: New Review / Review Detail -->
+  <div class="modal-overlay" id="review-modal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2 id="review-modal-title">Write Performance Review</h2>
+      <form id="review-form" novalidate>
+        <div class="form-row"><label for="review-employee-id">Employee ID *</label><input type="text" id="review-employee-id" name="employee_id" placeholder="e.g. emp-1" required /></div>
+        <div class="form-row"><label for="review-reviewer-id">Reviewer ID *</label><input type="text" id="review-reviewer-id" name="reviewer_id" placeholder="e.g. mgr-1" required /></div>
+        <p class="form-section-label" style="margin-top:1rem">Rubric — score each dimension</p>
+        <div id="review-rubric-rows"><p style="color:#6b7280;font-size:0.85rem">Loading rubric…</p></div>
+        <p class="hint">Comments are optional but, if provided, are checked for potentially biased language before the review is recorded. You retain the final wording either way.</p>
+        <p class="form-error" id="review-form-error"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="review-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="review-modal-submit">Submit Review</button>
+        </div>
+      </form>
+      <div id="review-result" style="display:none">
+        <p class="form-section-label" style="margin-top:0;border-top:none;padding-top:0">Score Breakdown</p>
+        <p style="font-size:1.3rem;font-weight:700;color:#1f2937">Average: <span id="review-result-average"></span> / 5</p>
+        <table class="breakdown-table">
+          <thead><tr><th>Criterion</th><th>Score</th></tr></thead>
+          <tbody id="review-result-breakdown"></tbody>
         </table>
+        <div id="review-result-bias" style="margin-top:1rem"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="review-result-close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Bias Warning Popup (overlays the New Review modal) -->
+  <div class="modal-overlay" id="review-bias-modal" role="dialog" aria-modal="true" style="z-index:1100">
+    <div class="modal" style="max-width:520px;border-top:4px solid #d97706">
+      <h2 style="color:#d97706">&#9888; Potential Bias Detected</h2>
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">
+        The following comments contain phrases that may reflect unconscious bias. You can go back and
+        revise them, or submit as-is — either way this will be recorded for the review's bias notes.
+        You retain the final wording.
+      </p>
+      <ul id="review-bias-modal-list" style="margin:0 0 1.25rem 1.2rem;padding:0;line-height:1.6;font-size:0.88rem"></ul>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="review-bias-edit-btn">Edit Comments</button>
+        <button type="button" class="btn btn-primary" id="review-bias-confirm-btn"
+          style="background:#d97706;border-color:#d97706">Submit Anyway</button>
       </div>
     </div>
   </div>
