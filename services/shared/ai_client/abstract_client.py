@@ -25,3 +25,16 @@ class AbstractAIClient(ABC):
         Returns dict: {ai_likely: bool, confidence: str, indicators: [str]}
         """
         ...
+
+    def analyze_bias(self, text: str, context: str = "general") -> dict:
+        """
+        Deep bias analysis with category and severity enrichment.
+        Returns dict: {flagged, phrases: [{phrase, reason, suggestion, category, severity}],
+                       overall_suggestion}
+        Non-abstract — subclasses opt in by overriding.
+        Default raises NotImplementedError so callers can detect and fall back gracefully.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement analyze_bias. "
+            "Use analyse_rule_based() as fallback."
+        )

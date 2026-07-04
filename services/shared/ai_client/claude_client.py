@@ -49,3 +49,11 @@ class ClaudeClient:
         """Convenience method for AI usage detection in resumes."""
         from .constraints import SCAN_AI_USAGE
         return self.call(SCAN_AI_USAGE, {"resume_text": resume_text})
+
+    def analyze_bias(self, text: str, context: str = "general") -> dict:
+        """
+        Deep bias analysis via ANALYZE_BIAS_DEEP constraint.
+        Returns phrases enriched with category and severity score.
+        """
+        from .constraints import ANALYZE_BIAS_DEEP
+        return self.call(ANALYZE_BIAS_DEEP, {"text": text, "context": context})
