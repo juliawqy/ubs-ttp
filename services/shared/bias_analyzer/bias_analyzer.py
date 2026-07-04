@@ -3,17 +3,23 @@ Bias analyser -- checks text for potentially biased language.
 Used by: recruitment (justification check, job postings), performance (review check).
 """
 from __future__ import annotations
+import logging
 
 from .models import BiasAnalysisResult, FlaggedPhrase
 from shared.base.service import BaseService
 from shared.ai_client.abstract_client import AbstractAIClient
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_RULE_BASED_FLAGS: dict[str, str] = {
     "rockstar": "Gendered/exclusionary tech jargon that can deter applicants. Replace with 'high performer' or 'exceptional contributor'",
     "ninja": "Exclusionary jargon that may discourage diverse candidates. Replace with 'expert' or 'specialist'",
     "culture fit": "Vague criterion that often means 'similar to us', creating affinity bias. Replace with specific behaviours e.g. 'collaborates across teams' or 'communicates decisions transparently'",
+    "cultural fit": "Vague criterion that often means 'similar to us', creating affinity bias. Replace with specific behaviours e.g. 'collaborates across teams' or 'communicates decisions transparently'",
     "aggressive": "Gendered connotation that can deter women from applying. Replace with 'driven', 'goal-oriented', or 'results-focused'",
     "digital native": "Age-discriminatory language that excludes older workers. Name the actual skill required e.g. 'proficient with Slack and Jira'",
+    "not a good fit": "Vague rejection criterion that can mask unconscious bias. Replace with specific, observable behaviours or skill gaps",
+    "doesn't fit": "Vague criterion that can mask unconscious bias. Replace with specific, observable behaviours or skill gaps",
 }
 
 
@@ -63,8 +69,8 @@ class BiasAnalyzer(BaseService):
                     flagged_phrases=flagged_phrases,
                     ai_used=True,
                 )
-            except Exception:
-                pass  # fall through to rule-based
+            except Exception as exc:
+                logger.warning("BiasAnalyzer AI call failed, falling back to rule-based: %s", exc)
 
         return self.analyse_rule_based(text)
 

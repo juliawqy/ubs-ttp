@@ -229,6 +229,7 @@ def check_justification_bias(body: BiasCheckTextRequest):
             {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
             for fp in result.flagged_phrases
         ],
+        "ai_used": result.ai_used,
     }
 
 
@@ -258,5 +259,6 @@ def decide_candidate(candidate_id: int, body: DecideRequest):
                 {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
                 for fp in result.bias_check.flagged_phrases
             ],
+            "ai_used": result.bias_check.ai_used,
         },
     )

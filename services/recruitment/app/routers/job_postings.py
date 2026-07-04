@@ -105,6 +105,7 @@ def create_job_posting(body: JobPostingCreate):
                 {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
                 for fp in result.bias_check.flagged_phrases
             ],
+            "ai_used": result.bias_check.ai_used,
         },
     }
     _store[_next_id] = posting
@@ -173,6 +174,7 @@ def update_job_posting(posting_id: str, body: JobPostingUpdate):
                 {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
                 for fp in result.bias_check.flagged_phrases
             ],
+            "ai_used": result.bias_check.ai_used,
         },
     }
     _store[pid] = posting
