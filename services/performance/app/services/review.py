@@ -52,7 +52,7 @@ class ReviewService(BaseService):
         score = self._scoring_service.score(criteria)
 
         bias_checks = {
-            c.criterion: self._bias_analyzer.analyse_rule_based(c.comments)
+            c.criterion: self._bias_analyzer.analyse(c.comments)
             for c in criteria
             if c.comments and c.comments.strip()
         }

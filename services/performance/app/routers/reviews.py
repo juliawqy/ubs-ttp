@@ -12,6 +12,7 @@ POST /reviews/check-bias  -- pre-check free text for bias without recording a
                              review (frontend's live bias warnings, mirrors
                              recruitment's /candidates/check-justification-bias)
 """
+import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer, BiasAnalysisResult
@@ -20,11 +21,20 @@ from app.services.review import ReviewService
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
-_bias_analyzer = BiasAnalyzer()
+
+def _make_bias_analyzer() -> BiasAnalyzer:
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if key:
+        from shared.ai_client.claude_client import ClaudeClient
+        return BiasAnalyzer(ai_client=ClaudeClient(key))
+    return BiasAnalyzer()
+
+
+_bias_analyzer = _make_bias_analyzer()
 _review_service = ReviewService(bias_analyzer=_bias_analyzer)
 
 
-# -- in-memory store ------------------------------------------------------------
+# -- in-memory store -----------------------------------------------------------
 
 class ReviewStore:
     """Owns review persistence only. Swap for a DB-backed impl without touching the router."""
@@ -50,7 +60,7 @@ class ReviewStore:
 _store = ReviewStore()
 
 
-# -- schemas ---------------------------------------------------------------------
+# -- schemas -------------------------------------------------------------------
 
 class CriterionScoreIn(BaseModel):
     criterion: str
@@ -68,7 +78,7 @@ class BiasCheckTextRequest(BaseModel):
     text: str
 
 
-# -- helpers ----------------------------------------------------------------------
+# -- helpers -------------------------------------------------------------------
 
 def _bias_check_to_dict(result: BiasAnalysisResult) -> dict:
     return {
@@ -101,7 +111,7 @@ def _review_to_dict(review_id: int, review: Review) -> dict:
     }
 
 
-# -- routes -----------------------------------------------------------------------
+# -- routes --------------------------------------------------------------------
 
 @router.post("", status_code=201, responses={422: {"description": "Invalid review submission"}})
 def create_review(body: ReviewCreate):
@@ -152,5 +162,5 @@ def get_review(review_id: int):
 @router.post("/check-bias")
 def check_bias(body: BiasCheckTextRequest):
     """Pre-check free text for bias without recording any review."""
-    result = _bias_analyzer.analyse_rule_based(body.text)
+    result = _bias_analyzer.analyse(body.text)
     return _bias_check_to_dict(result)

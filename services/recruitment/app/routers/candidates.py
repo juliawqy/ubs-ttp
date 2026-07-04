@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from shared.document_parser.pdf_parser import PDFParser
 from shared.document_parser.pii_redactor import PIIRedactor
+import os
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer
 from app.services.skills_assessment import SkillsAssessmentService
 from app.services.hire_decision import HireDecisionService
@@ -20,7 +21,17 @@ router = APIRouter(prefix="/candidates", tags=["candidates"])
 _pdf_parser = PDFParser()
 _redactor = PIIRedactor()
 _assessment_service = SkillsAssessmentService()
-_decision_service = HireDecisionService(bias_analyzer=BiasAnalyzer())
+
+
+def _make_bias_analyzer() -> BiasAnalyzer:
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if key:
+        from shared.ai_client.claude_client import ClaudeClient
+        return BiasAnalyzer(ai_client=ClaudeClient(key))
+    return BiasAnalyzer()
+
+
+_decision_service = HireDecisionService(bias_analyzer=_make_bias_analyzer())
 
 ALLOWED_CONTENT_TYPES = {"application/pdf"}
 
@@ -71,7 +82,7 @@ class CandidateStore:
     def update_assessment(self, candidate_id: int, assessment_summary: dict) -> None:
         """Store the most recent skills-assessment result for a candidate.
 
-        Overwrites any previous assessment — only the latest score is kept,
+        Overwrites any previous assessment -- only the latest score is kept,
         per the one-time-decision workflow (assessment is locked once a
         hire/reject decision is recorded).
         """
@@ -211,7 +222,7 @@ class BiasCheckTextRequest(BaseModel):
 @router.post("/check-justification-bias")
 def check_justification_bias(body: BiasCheckTextRequest):
     """Pre-check justification text for bias without recording any decision."""
-    result = _decision_service._bias_analyzer.analyse_rule_based(body.text)
+    result = _decision_service._bias_analyzer.analyse(body.text)
     return {
         "flagged": result.flagged,
         "flagged_phrases": [

@@ -1,7 +1,6 @@
 """
 Bias analyser -- checks text for potentially biased language.
-Used by: recruitment (justification check), performance (review check).
-AI is called only when rule-based checks are insufficient.
+Used by: recruitment (justification check, job postings), performance (review check).
 """
 from __future__ import annotations
 
@@ -21,7 +20,7 @@ DEFAULT_RULE_BASED_FLAGS: dict[str, str] = {
 class BiasAnalyzer(BaseService):
     """
     Analyses text for biased language.
-    Strategy: rule-based first, AI only if needed and explicitly requested.
+    Strategy: AI analysis when client is injected, rule-based fallback otherwise.
 
     Args:
         rules: mapping of {phrase: "reason. suggestion"} to flag.
@@ -39,10 +38,40 @@ class BiasAnalyzer(BaseService):
         self._rules = rules if rules is not None else DEFAULT_RULE_BASED_FLAGS
         self._ai_client = ai_client
 
+    def analyse(self, text: str) -> BiasAnalysisResult:
+        """
+        Primary analysis method — calls Claude AI when a client is injected,
+        falls back silently to rule-based on any exception or when no client
+        is configured.
+
+        This is the method all services should call. Use analyse_rule_based()
+        directly only when you explicitly want to skip AI (e.g. in tests).
+        """
+        if self._ai_client is not None:
+            try:
+                raw = self._ai_client.analyze_bias(text)
+                flagged_phrases = [
+                    FlaggedPhrase(
+                        phrase=p["phrase"],
+                        reason=p.get("reason", ""),
+                        suggestion=p.get("suggestion", ""),
+                    )
+                    for p in raw.get("phrases", [])
+                ]
+                return BiasAnalysisResult(
+                    flagged=raw.get("flagged", len(flagged_phrases) > 0),
+                    flagged_phrases=flagged_phrases,
+                    ai_used=True,
+                )
+            except Exception:
+                pass  # fall through to rule-based
+
+        return self.analyse_rule_based(text)
+
     def analyse_rule_based(self, text: str) -> BiasAnalysisResult:
         """
         Fast, deterministic check using known problematic patterns.
-        No AI cost. Use this first.
+        No AI cost. Called directly by analyse() as its fallback.
         """
         flagged_phrases = []
         lower_text = text.lower()
@@ -64,9 +93,8 @@ class BiasAnalyzer(BaseService):
 
     async def analyse_with_ai(self, text: str) -> BiasAnalysisResult:
         """
-        Deep analysis using Claude API.
-        Only called when rule-based check passes but deeper analysis is needed.
-        Requires ai_client to be injected.
+        Async deep analysis using Claude check_bias constraint.
+        Kept for backward-compatibility; prefer analyse() for new code.
         """
         if not self._ai_client:
             raise ValueError("AI client not configured. Use analyse_rule_based() instead.")
