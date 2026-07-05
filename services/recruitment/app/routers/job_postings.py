@@ -2,10 +2,12 @@
 Job postings router.
 Accepts a manager's request to open a new role and passes it to
 JobPostingsService. Business logic (validation, bias check) lives
-in the service — the router owns only HTTP and in-memory storage.
+in the service -- the router owns only HTTP and in-memory storage.
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
+import os
+from shared.bias_analyzer.bias_analyzer import BiasAnalyzer
 from app.services.job_postings import (
     JobPostingsService,
     JobPostingRequest,
@@ -14,14 +16,23 @@ from app.services.job_postings import (
 
 router = APIRouter(prefix="/job-postings", tags=["job postings"])
 
-_service = JobPostingsService()
 
-# ── in-memory store ───────────────────────────────────────────────────────────
+def _make_bias_analyzer() -> BiasAnalyzer:
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if key:
+        from shared.ai_client.claude_client import ClaudeClient
+        return BiasAnalyzer(ai_client=ClaudeClient(key))
+    return BiasAnalyzer()
+
+
+_service = JobPostingsService(bias_analyzer=_make_bias_analyzer())
+
+# -- in-memory store -----------------------------------------------------------
 _store: dict[int, dict] = {}
 _next_id = 1
 
 
-# ── schemas ───────────────────────────────────────────────────────────────────
+# -- schemas -------------------------------------------------------------------
 
 class HiringManagerIn(BaseModel):
     id: str
@@ -46,7 +57,7 @@ class JobPostingUpdate(BaseModel):
     manager: HiringManagerIn
 
 
-# ── routes ────────────────────────────────────────────────────────────────────
+# -- routes --------------------------------------------------------------------
 
 @router.get("")
 def list_job_postings():
@@ -94,6 +105,7 @@ def create_job_posting(body: JobPostingCreate):
                 {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
                 for fp in result.bias_check.flagged_phrases
             ],
+            "ai_used": result.bias_check.ai_used,
         },
     }
     _store[_next_id] = posting
@@ -162,6 +174,7 @@ def update_job_posting(posting_id: str, body: JobPostingUpdate):
                 {"phrase": fp.phrase, "reason": fp.reason, "suggestion": fp.suggestion}
                 for fp in result.bias_check.flagged_phrases
             ],
+            "ai_used": result.bias_check.ai_used,
         },
     }
     _store[pid] = posting

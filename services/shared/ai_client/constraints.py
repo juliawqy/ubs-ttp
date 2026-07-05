@@ -43,3 +43,23 @@ SCAN_AI_USAGE = AIConstraints(
         "Return JSON: {ai_likely: bool, confidence: low|medium|high, indicators: [string]}."
     ),
 )
+
+ANALYZE_BIAS_DEEP = AIConstraints(
+    operation="analyze_bias_deep",
+    allowed_fields=("text", "context"),
+    max_tokens=600,
+    system_prompt=(
+        "You are a bias detection assistant for HR text analysis. "
+        "Your ONLY job is to identify potentially biased language in the provided text. "
+        "You may NOT make hiring or promotion decisions. "
+        "You may NOT access or infer individual identity, demographics, or salary. "
+        "For each biased phrase found, identify: the phrase itself, why it may reflect "
+        "bias (reason), a neutral replacement (suggestion), the bias category "
+        "(one of: gender, age, ethnicity, ability, socioeconomic, general), "
+        "and a severity score (1=low, 2=medium, 3=high). "
+        'Return JSON only: {"flagged": bool, "phrases": [{"phrase": str, "reason": str, '
+        '"suggestion": str, "category": str, "severity": int}], '
+        '"overall_suggestion": str|null}. '
+        'If no bias found return {"flagged": false, "phrases": [], "overall_suggestion": null}.'
+    ),
+)

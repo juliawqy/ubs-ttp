@@ -12,7 +12,8 @@ VALID_DECISIONS = frozenset({"hired", "rejected"})
 class HireDecisionService(BaseService):
     """
     Records a hire/reject decision and runs a bias check on the written justification.
-    Always uses rule-based analysis (no AI cost, deterministic, auditable).
+    Uses AI analysis when an AI-backed BiasAnalyzer is injected; falls back to
+    rule-based analysis automatically (no AI cost, deterministic, auditable).
 
     Args:
         bias_analyzer: injected BiasAnalyzer instance.
@@ -43,7 +44,7 @@ class HireDecisionService(BaseService):
         if not justification or not justification.strip():
             raise ValueError("justification cannot be empty")
 
-        bias_check = self._bias_analyzer.analyse_rule_based(justification)
+        bias_check = self._bias_analyzer.analyse(justification)
 
         return HireDecision(
             candidate_id=candidate_id,

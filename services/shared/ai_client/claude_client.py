@@ -37,7 +37,10 @@ class ClaudeClient:
             messages=[{"role": "user", "content": user_message}],
         )
 
-        raw = response.content[0].text
+        raw = response.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[-1]          # drop the opening ```json line
+            raw = raw.rsplit("```", 1)[0].strip()  # drop the closing ```
         return json.loads(raw)
 
     async def check_bias(self, text: str) -> dict:
@@ -49,3 +52,11 @@ class ClaudeClient:
         """Convenience method for AI usage detection in resumes."""
         from .constraints import SCAN_AI_USAGE
         return self.call(SCAN_AI_USAGE, {"resume_text": resume_text})
+
+    def analyze_bias(self, text: str, context: str = "general") -> dict:
+        """
+        Deep bias analysis via ANALYZE_BIAS_DEEP constraint.
+        Returns phrases enriched with category and severity score.
+        """
+        from .constraints import ANALYZE_BIAS_DEEP
+        return self.call(ANALYZE_BIAS_DEEP, {"text": text, "context": context})

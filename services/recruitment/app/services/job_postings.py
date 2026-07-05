@@ -1,13 +1,10 @@
 """
-Job postings service — handles manager requests to open a new role.
+Job postings service -- handles manager requests to open a new role.
 
 A job posting starts as a request from a hiring manager to the hiring
 department. The manager describes what they need; the hiring department
-reviews and publishes. Bias check on the description is advisory —
+reviews and publishes. Bias check on the description is advisory --
 flags are surfaced to the manager so they can revise before submission.
-
-AI-powered bias analysis (deeper suggestions, rewrite proposals) is
-planned but not yet wired in. Rule-based check runs in its place.
 """
 from dataclasses import dataclass, field
 from shared.base.service import BaseService
@@ -63,9 +60,7 @@ class JobPostingsService(BaseService):
         """
         self._validate(request)
 
-        # Rule-based check — no AI cost, deterministic
-        # TODO: swap for AI analyser (Claude) once prompt constraints are agreed
-        bias_result = self._bias_analyzer.analyse_rule_based(request.description)
+        bias_result = self._bias_analyzer.analyse(request.description)
 
         return JobPostingResult(
             title=request.title,
@@ -77,7 +72,7 @@ class JobPostingsService(BaseService):
             bias_check=bias_result,
         )
 
-    # ── internals ────────────────────────────────────────────────────────────
+    # -- internals ------------------------------------------------------------
 
     def _validate(self, request: JobPostingRequest) -> None:
         if not request.title.strip():
