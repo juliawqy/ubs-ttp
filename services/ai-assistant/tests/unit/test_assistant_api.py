@@ -6,6 +6,8 @@ Run: pytest services/ai-assistant/tests/unit/test_assistant_api.py -v
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.routers.assistant import get_service
+from app.services.bias_classifier import BiasDetectionService
 
 client = TestClient(app)
 
@@ -131,3 +133,22 @@ class TestAnalyzeEndpoint:
             if p["category"] == "age"
         ]
         assert len(age_phrases) > 0
+
+
+class TestGetServiceDependency:
+    """Covers the get_service() factory — bypassed in other tests via dependency_overrides."""
+
+    def test_get_service_returns_bias_detection_service(self):
+        """get_service() must return a BiasDetectionService even with no API key set."""
+        import os
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+        svc = get_service()
+        assert isinstance(svc, BiasDetectionService)
+
+    def test_get_service_with_empty_key_still_returns_service(self):
+        """An empty key must not raise — ClaudeClient is instantiated with empty string."""
+        import os
+        os.environ["ANTHROPIC_API_KEY"] = ""
+        svc = get_service()
+        assert isinstance(svc, BiasDetectionService)
+        os.environ.pop("ANTHROPIC_API_KEY", None)

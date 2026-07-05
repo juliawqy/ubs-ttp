@@ -89,3 +89,71 @@ class TestAIClientNotRequired:
         import asyncio
         with pytest.raises(ValueError, match="AI client not configured"):
             asyncio.run(analyzer.analyse_with_ai("some text"))
+
+
+class TestAnalyseMethod:
+    """Tests for the primary analyse() method — AI-first with rule-based fallback."""
+
+    def test_analyse_without_client_returns_rule_based(self):
+        analyzer = BiasAnalyzer()
+        result = analyzer.analyse("rockstar developer")
+        assert result.flagged is True
+        assert result.ai_used is False
+
+    def test_analyse_without_client_clean_text_not_flagged(self):
+        analyzer = BiasAnalyzer()
+        result = analyzer.analyse("Clear and effective communicator.")
+        assert result.flagged is False
+        assert result.ai_used is False
+
+    def test_analyse_with_ai_client_calls_analyze_bias(self):
+        from unittest.mock import MagicMock
+        mock_client = MagicMock()
+        mock_client.analyze_bias.return_value = {
+            "flagged": False, "phrases": [], "overall_suggestion": None
+        }
+        analyzer = BiasAnalyzer(ai_client=mock_client)
+        analyzer.analyse("some text")
+        mock_client.analyze_bias.assert_called_once()
+
+    def test_analyse_with_ai_client_sets_ai_used_true(self):
+        from unittest.mock import MagicMock
+        mock_client = MagicMock()
+        mock_client.analyze_bias.return_value = {
+            "flagged": False, "phrases": [], "overall_suggestion": None
+        }
+        analyzer = BiasAnalyzer(ai_client=mock_client)
+        result = analyzer.analyse("some text")
+        assert result.ai_used is True
+
+    def test_analyse_ai_success_returns_flagged_phrases(self):
+        from unittest.mock import MagicMock
+        mock_client = MagicMock()
+        mock_client.analyze_bias.return_value = {
+            "flagged": True,
+            "phrases": [{"phrase": "rockstar", "reason": "gendered", "suggestion": "high performer"}],
+            "overall_suggestion": None,
+        }
+        analyzer = BiasAnalyzer(ai_client=mock_client)
+        result = analyzer.analyse("rockstar developer")
+        assert result.flagged is True
+        assert any(fp.phrase == "rockstar" for fp in result.flagged_phrases)
+
+    def test_analyse_falls_back_to_rule_based_on_ai_exception(self):
+        from unittest.mock import MagicMock
+        mock_client = MagicMock()
+        mock_client.analyze_bias.side_effect = RuntimeError("API unavailable")
+        analyzer = BiasAnalyzer(ai_client=mock_client)
+        result = analyzer.analyse("rockstar developer")
+        # Falls back — still flags the phrase via rule-based
+        assert result.flagged is True
+        assert result.ai_used is False
+
+    def test_analyse_fallback_does_not_raise(self):
+        from unittest.mock import MagicMock
+        mock_client = MagicMock()
+        mock_client.analyze_bias.side_effect = Exception("unexpected error")
+        analyzer = BiasAnalyzer(ai_client=mock_client)
+        # Must not propagate the exception
+        result = analyzer.analyse("Clean text.")
+        assert result is not None

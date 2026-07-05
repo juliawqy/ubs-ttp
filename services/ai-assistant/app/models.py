@@ -30,12 +30,15 @@ class BiasCategory(str, Enum):
 
 @dataclass
 class EnrichedFlaggedPhrase:
-    """A flagged phrase enriched with bias category and severity score."""
+    """
+    A flagged phrase enriched with bias category and severity score.
+    Severity: 1 = low, 2 = medium, 3 = high.
+    """
     phrase: str
     reason: str
     suggestion: str
     category: BiasCategory
-    severity: int  # 1 = low, 2 = medium, 3 = high
+    severity: int
 
 
 @dataclass

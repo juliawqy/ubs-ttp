@@ -7,6 +7,7 @@ POST /assistant/analyze -- analyse any HR text (job ad, review, feedback)
                            severity score (1-3), and neutral replacement suggestions.
                            Falls back to rule-based analysis if Claude is unavailable.
 """
+from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, field_validator
 from pydantic_settings import BaseSettings
@@ -91,7 +92,7 @@ def _result_to_response(result: AnalysisResult) -> AnalyzeResponse:
 @router.post("/analyze")
 def analyze(
     body: AnalyzeRequest,
-    svc: BiasDetectionService = Depends(get_service),
+    svc: Annotated[BiasDetectionService, Depends(get_service)],
 ) -> AnalyzeResponse:
     """
     Analyse HR text for biased language.
