@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard – Aequus</title>
   <link rel="stylesheet" href="/css/styles.css" />
-  <!-- Chart.js for KPI visualisations -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -18,19 +17,19 @@
   </nav>
 
   <div class="container">
-    <p class="page-title"><span>Diversity</span> Dashboard</p>
+    <p class="page-title"><span>Analytics</span> Dashboard</p>
 
     <!-- KPI tiles -->
     <div class="card-grid">
       <div class="stat-tile">
         <div class="stat-label">Sourcing Diversity Ratio</div>
         <div class="stat-value" id="kpi-diversity">—</div>
-        <div class="stat-sub">% underrepresented candidates in pipeline</div>
+        <div class="stat-sub">% diverse candidates in applied pipeline</div>
       </div>
       <div class="stat-tile">
         <div class="stat-label">Skills-First Hire Rate</div>
         <div class="stat-value" id="kpi-skills-hire">—</div>
-        <div class="stat-sub">Hires based on skills vs credentials</div>
+        <div class="stat-sub">Offers converted to hires</div>
       </div>
       <div class="stat-tile">
         <div class="stat-label">Avg Promotion Velocity</div>
@@ -44,20 +43,21 @@
       </div>
     </div>
 
-    <!-- Charts row -->
+    <!-- Top charts row: diversity funnel + bias incidents over time -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
       <div class="card">
         <div class="card-title">Pipeline Diversity by Stage</div>
         <canvas id="chart-pipeline" height="200"></canvas>
       </div>
       <div class="card">
-        <div class="card-title">Promotion Velocity by Group</div>
-        <canvas id="chart-promotion" height="200"></canvas>
+        <div class="card-title">Bias Incidents Over Time</div>
+        <canvas id="chart-bias" height="200"></canvas>
       </div>
     </div>
 
+    <!-- Training completion rates -->
     <div class="card">
-      <div class="card-title">Training Utilisation by Demographic Group</div>
+      <div class="card-title">Training Completion Rate by Demographic Group</div>
       <canvas id="chart-training" height="120"></canvas>
     </div>
   </div>

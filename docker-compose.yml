@@ -76,6 +76,7 @@ services:
       - API_URL=http://recruitment:8000
       - TRAINING_API_URL=http://training:8000
       - PERFORMANCE_API_URL=http://performance:8000
+      - ANALYTICS_API_URL=http://analytics:8000
     depends_on: [recruitment, training, performance, ai-assistant, analytics]
 
 volumes:
