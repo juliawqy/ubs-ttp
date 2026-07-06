@@ -16,6 +16,30 @@ from app.services.bias_incident import BiasIncidentService
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
+_AVG_PROMOTION_MONTHS: float = 14.2
+_ENPS_SCORE: int = 42
+
+# Stub: AI-synthesised feedback themes for the dashboard.
+# In production this would call the ai-assistant service with the logged-in
+# manager's aggregated 360-degree feedback and return Claude-generated themes.
+_FEEDBACK_INSIGHTS: list[dict] = [
+    {
+        "theme": "Communication clarity",
+        "mentions": 3,
+        "suggestion": "Share decision rationale in team channels before acting — reduces follow-up questions and builds trust.",
+    },
+    {
+        "theme": "Recognition & acknowledgement",
+        "mentions": 2,
+        "suggestion": "Name individual contributions in standups. Small, specific praise lands better than general thanks.",
+    },
+    {
+        "theme": "Meeting structure",
+        "mentions": 2,
+        "suggestion": "Circulate a clear agenda 24 hours before recurring meetings so the team can prepare.",
+    },
+]
+
 # ── Module-level singleton (reset in tests via conftest) ───────────────────────
 _store = MetricsStore()
 
@@ -78,9 +102,9 @@ def get_kpis(
     return {
         # KPI tiles
         "sourcing_diversity_ratio": diversity.sourcing_diversity_ratio,
-        "skills_hire_rate": diversity.skills_hire_rate,
-        "avg_promotion_months": 14.2,   # seeded static — extend when HR data integrated
-        "enps_score": 42,               # seeded static — extend when survey data integrated
+        "offer_acceptance_rate": diversity.offer_acceptance_rate,
+        "avg_promotion_months": _AVG_PROMOTION_MONTHS,
+        "enps_score": _ENPS_SCORE,
         # Chart data
         "pipeline_by_stage": [
             {"stage": f.stage, "total": f.total, "pct": f.diverse_pct}
@@ -96,6 +120,7 @@ def get_kpis(
             {"group": "non_binary",  "pct": 80.0},
             {"group": "unspecified", "pct": 60.0},
         ],
+        "feedback_insights": _FEEDBACK_INSIGHTS,
     }
 
 

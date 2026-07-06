@@ -30,6 +30,12 @@ services:
       - "8001:8000"
     env_file: .env
     depends_on: [postgres, localstack]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import httpx; httpx.get('http://localhost:8000/health', timeout=2).raise_for_status()\""]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
 
   training:
     build:
@@ -39,6 +45,12 @@ services:
       - "8002:8000"
     env_file: .env
     depends_on: [postgres]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import httpx; httpx.get('http://localhost:8000/health', timeout=2).raise_for_status()\""]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
 
   performance:
     build:
@@ -48,6 +60,12 @@ services:
       - "8003:8000"
     env_file: .env
     depends_on: [postgres]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import httpx; httpx.get('http://localhost:8000/health', timeout=2).raise_for_status()\""]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
 
   ai-assistant:
     build:
@@ -66,6 +84,23 @@ services:
       - "8005:8000"
     env_file: .env
     depends_on: [postgres]
+
+  seeder:
+    build:
+      context: .
+      dockerfile: tools/Dockerfile.seeder
+    environment:
+      REC_URL: http://recruitment:8000
+      PERF_URL: http://performance:8000
+      TR_URL: http://training:8000
+    depends_on:
+      recruitment:
+        condition: service_healthy
+      performance:
+        condition: service_healthy
+      training:
+        condition: service_healthy
+    restart: "no"
 
   frontend:
     build: ./frontend

@@ -94,3 +94,36 @@ class TestGetAggregatedFeedback:
         client.post("/feedback", json=_valid_payload(employee_id="emp-fb-agg4", rater_id="rater-x"))
         response = client.get("/feedback/emp-fb-agg4")
         assert response.json()["employee_id"] == "emp-fb-agg4"
+
+
+class TestFeedbackIdFormatValidation:
+    """Alphanumeric-plus-hyphen-underscore IDs only (Pydantic pattern check)."""
+
+    def test_employee_id_with_spaces_returns_422(self):
+        response = client.post("/feedback", json=_valid_payload(employee_id="not a valid id"))
+        assert response.status_code == 422
+
+    def test_employee_id_with_apostrophe_returns_422(self):
+        response = client.post("/feedback", json=_valid_payload(employee_id="thisisn'tanID"))
+        assert response.status_code == 422
+
+    def test_rater_id_with_special_chars_returns_422(self):
+        response = client.post("/feedback", json=_valid_payload(rater_id="rater!!"))
+        assert response.status_code == 422
+
+    def test_valid_hyphenated_ids_are_accepted(self):
+        response = client.post("/feedback", json=_valid_payload(
+            employee_id="emp-001-x", rater_id="rater-002-y"
+        ))
+        assert response.status_code == 201
+
+    def test_valid_underscore_ids_are_accepted(self):
+        response = client.post("/feedback", json=_valid_payload(
+            employee_id="emp_003", rater_id="rater_004"
+        ))
+        assert response.status_code == 201
+
+    def test_offensive_comment_via_api_returns_422(self):
+        payload = _valid_payload(comments="That guy is an idiot, total waste of space.")
+        response = client.post("/feedback", json=payload)
+        assert response.status_code == 422

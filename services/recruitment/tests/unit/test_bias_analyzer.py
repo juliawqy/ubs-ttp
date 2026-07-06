@@ -114,7 +114,7 @@ class TestAnalyseMethod:
         }
         analyzer = BiasAnalyzer(ai_client=mock_client)
         analyzer.analyse("some text")
-        mock_client.analyze_bias.assert_called_once()
+        mock_client.analyze_bias.assert_called_once_with("some text")
 
     def test_analyse_with_ai_client_sets_ai_used_true(self):
         from unittest.mock import MagicMock
@@ -157,3 +157,54 @@ class TestAnalyseMethod:
         # Must not propagate the exception
         result = analyzer.analyse("Clean text.")
         assert result is not None
+
+class TestNationalityDiscriminationFlags:
+    """Nationality/origin discrimination must be caught by the rule-based analyser."""
+
+    def test_only_nationality_applicants_allowed_is_flagged(self, analyzer):
+        result = analyzer.analyse_rule_based("only russian applicants allowed")
+        assert result.flagged is True
+
+    def test_only_nationality_applicants_phrase_appears_in_result(self, analyzer):
+        result = analyzer.analyse_rule_based("only russian applicants allowed")
+        # At least one flagged phrase must mention restriction of applicants
+        phrases = " ".join(fp.phrase for fp in result.flagged_phrases).lower()
+        assert "only" in phrases or "applicant" in phrases
+
+    def test_no_foreigners_is_flagged(self, analyzer):
+        result = analyzer.analyse_rule_based("No foreigners need apply for this role.")
+        assert result.flagged is True
+
+    def test_no_immigrants_is_flagged(self, analyzer):
+        result = analyzer.analyse_rule_based("We do not accept applications from immigrants.")
+        assert result.flagged is True
+
+    def test_local_candidates_only_is_flagged(self, analyzer):
+        result = analyzer.analyse_rule_based("Local candidates only, please.")
+        assert result.flagged is True
+
+    def test_locals_only_is_flagged(self, analyzer):
+        result = analyzer.analyse_rule_based("Locals only.")
+        assert result.flagged is True
+
+    def test_only_us_citizens_is_flagged(self, analyzer):
+        result = analyzer.analyse_rule_based("This role is open to US citizens only.")
+        assert result.flagged is True
+
+    def test_nationality_discrimination_flag_includes_reason(self, analyzer):
+        result = analyzer.analyse_rule_based("only russian applicants allowed")
+        assert result.flagged_phrases[0].reason != ""
+
+    def test_nationality_discrimination_flag_includes_suggestion(self, analyzer):
+        result = analyzer.analyse_rule_based("only russian applicants allowed")
+        assert result.flagged_phrases[0].suggestion != ""
+
+    def test_diverse_welcoming_text_not_flagged(self, analyzer):
+        result = analyzer.analyse_rule_based(
+            "We welcome applications from candidates of all backgrounds and nationalities."
+        )
+        assert result.flagged is False
+
+    def test_nationality_check_case_insensitive(self, analyzer):
+        result = analyzer.analyse_rule_based("Only RUSSIAN Applicants allowed")
+        assert result.flagged is True

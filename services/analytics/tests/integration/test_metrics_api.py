@@ -28,8 +28,7 @@ class TestGetDiversityEndpoint:
 
     def test_response_has_funnel_field(self):
         res = client.get("/metrics/diversity")
-        data = res.json()
-        assert "funnel" in data
+        assert "funnel" in res.json()
 
     def test_funnel_has_four_stages(self):
         res = client.get("/metrics/diversity")
@@ -52,9 +51,9 @@ class TestGetDiversityEndpoint:
         res = client.get("/metrics/diversity")
         assert "sourcing_diversity_ratio" in res.json()
 
-    def test_response_has_skills_hire_rate(self):
+    def test_response_has_offer_acceptance_rate(self):
         res = client.get("/metrics/diversity")
-        assert "skills_hire_rate" in res.json()
+        assert "offer_acceptance_rate" in res.json()
 
 
 class TestGetBiasIncidentsEndpoint:
@@ -95,9 +94,9 @@ class TestGetKPIsEndpoint:
         data = client.get("/metrics/kpis").json()
         assert "sourcing_diversity_ratio" in data
 
-    def test_has_skills_hire_rate(self):
+    def test_has_offer_acceptance_rate(self):
         data = client.get("/metrics/kpis").json()
-        assert "skills_hire_rate" in data
+        assert "offer_acceptance_rate" in data
 
     def test_has_avg_promotion_months(self):
         data = client.get("/metrics/kpis").json()
@@ -122,6 +121,14 @@ class TestGetKPIsEndpoint:
     def test_pipeline_by_stage_has_four_entries(self):
         data = client.get("/metrics/kpis").json()
         assert len(data["pipeline_by_stage"]) == 4
+
+    def test_avg_promotion_months_is_numeric(self):
+        data = client.get("/metrics/kpis").json()
+        assert isinstance(data["avg_promotion_months"], (int, float))
+
+    def test_enps_score_is_numeric(self):
+        data = client.get("/metrics/kpis").json()
+        assert isinstance(data["enps_score"], (int, float))
 
 
 class TestPostPipelineEvent:
@@ -188,6 +195,16 @@ class TestPostBiasIncident:
 
     def test_invalid_service_returns_422(self):
         res = client.post("/metrics/bias-incident", json={
-            "service": "unknown_service",
+            "service": "invalid_service",
+            "flagged": True,
         })
         assert res.status_code == 422
+
+    def test_incident_appears_in_by_service_count(self):
+        before = client.get("/metrics/bias-incidents").json()["by_service"]["recruitment"]
+        client.post("/metrics/bias-incident", json={
+            "service": "recruitment",
+            "flagged": True,
+        })
+        after = client.get("/metrics/bias-incidents").json()["by_service"]["recruitment"]
+        assert after == before + 1

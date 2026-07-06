@@ -98,12 +98,46 @@ class TestKPIValues:
         assert isinstance(result.sourcing_diversity_ratio, float)
         assert 0.0 <= result.sourcing_diversity_ratio <= 100.0
 
-    def test_skills_hire_rate_is_float_percentage(self, service):
+    def test_offer_acceptance_rate_is_float_percentage(self, service):
         result = service.get_diversity()
-        assert isinstance(result.skills_hire_rate, float)
-        assert 0.0 <= result.skills_hire_rate <= 100.0
+        assert isinstance(result.offer_acceptance_rate, float)
+        assert 0.0 <= result.offer_acceptance_rate <= 100.0
 
-    def test_skills_hire_rate_is_zero_when_no_offers(self, empty_service):
+    def test_offer_acceptance_rate_is_zero_when_no_offers(self, empty_service):
         empty_service._store.add_pipeline_event(PipelineStage.APPLIED, DemographicGroup.FEMALE)
         result = empty_service.get_diversity()
-        assert result.skills_hire_rate == 0.0
+        assert result.offer_acceptance_rate == 0.0
+
+    def test_offer_acceptance_rate_reflects_hired_over_offered(self):
+        store = MetricsStore()
+        store.clear()
+        # 4 offered, 2 hired → 50%
+        for _ in range(4):
+            store.add_pipeline_event(PipelineStage.OFFERED, DemographicGroup.MALE)
+        for _ in range(2):
+            store.add_pipeline_event(PipelineStage.HIRED, DemographicGroup.MALE)
+        svc = DiversityMetricsService(store=store)
+        result = svc.get_diversity()
+        assert result.offer_acceptance_rate == 50.0
+
+    def test_sourcing_diversity_ratio_reflects_applied_diverse_pct(self, service):
+        result = service.get_diversity()
+        applied_funnel = next(f for f in result.funnel if f.stage == "applied")
+        assert result.sourcing_diversity_ratio == applied_funnel.diverse_pct
+
+    def test_non_binary_counted_as_diverse(self):
+        store = MetricsStore()
+        store.clear()
+        store.add_pipeline_event(PipelineStage.APPLIED, DemographicGroup.NON_BINARY)
+        store.add_pipeline_event(PipelineStage.APPLIED, DemographicGroup.MALE)
+        svc = DiversityMetricsService(store=store)
+        result = svc.get_diversity()
+        assert result.sourcing_diversity_ratio == 50.0
+
+    def test_male_not_counted_as_diverse(self):
+        store = MetricsStore()
+        store.clear()
+        store.add_pipeline_event(PipelineStage.APPLIED, DemographicGroup.MALE)
+        svc = DiversityMetricsService(store=store)
+        result = svc.get_diversity()
+        assert result.sourcing_diversity_ratio == 0.0

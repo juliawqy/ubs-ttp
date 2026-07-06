@@ -8,6 +8,7 @@ async function loadDashboard() {
     renderPipelineChart(kpis.pipeline_by_stage);
     renderBiasIncidentsChart(kpis.bias_incidents_trend);
     renderTrainingChart(kpis.training_completion_by_group);
+  renderFeedbackInsights(kpis.feedback_insights);
   } catch (e) {
     console.error("Dashboard load failed:", e.message);
     showError(e.message);
@@ -18,7 +19,7 @@ function renderKPITiles(kpis) {
   document.getElementById("kpi-diversity").textContent =
     kpis.sourcing_diversity_ratio.toFixed(1) + "%";
   document.getElementById("kpi-skills-hire").textContent =
-    kpis.skills_hire_rate.toFixed(1) + "%";
+    kpis.offer_acceptance_rate.toFixed(1) + "%";
   document.getElementById("kpi-promo-velocity").textContent =
     kpis.avg_promotion_months + " mo";
   document.getElementById("kpi-enps").textContent = kpis.enps_score;
@@ -130,9 +131,27 @@ function showError(msg) {
   if (!container) return;
   const banner = document.createElement("div");
   banner.style.cssText =
-    "background:#fee2e2;color:#b91c1c;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;font-size:.875rem;";
-  banner.textContent = "Dashboard data unavailable: " + msg;
+    "background:#fee2e2;color:#b91c1c;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem";
+  banner.textContent = "Dashboard error: " + msg;
   container.prepend(banner);
 }
 
-loadDashboard();
+function renderFeedbackInsights(insights) {
+  const container = document.getElementById("feedback-insights-list");
+  if (!insights || insights.length === 0) {
+    container.innerHTML = '<p style="color:#6b7280;font-size:0.85rem">No feedback themes available yet.</p>';
+    return;
+  }
+  container.innerHTML = insights.map((item) => `
+    <div style="display:flex;gap:1rem;align-items:flex-start;padding:0.75rem 0;border-bottom:1px solid #f3f4f6">
+      <div style="flex-shrink:0;background:#fee2e2;color:#b91c1c;border-radius:999px;padding:0.2rem 0.6rem;font-size:0.75rem;font-weight:700;white-space:nowrap">
+        ${item.mentions}x
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:0.88rem;color:#1f2937;margin-bottom:0.2rem">${item.theme}</div>
+        <div style="font-size:0.82rem;color:#6b7280">${item.suggestion}</div>
+      </div>
+    </div>`).join("");
+}
+
+document.addEventListener("DOMContentLoaded", loadDashboard);

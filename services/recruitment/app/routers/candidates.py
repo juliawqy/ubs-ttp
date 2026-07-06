@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from shared.document_parser.pdf_parser import PDFParser
 from shared.document_parser.pii_redactor import PIIRedactor
-import os
+from shared.ai_client.factory import make_ai_client
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer
 from app.services.skills_assessment import SkillsAssessmentService
 from app.services.hire_decision import HireDecisionService
@@ -21,17 +21,7 @@ router = APIRouter(prefix="/candidates", tags=["candidates"])
 _pdf_parser = PDFParser()
 _redactor = PIIRedactor()
 _assessment_service = SkillsAssessmentService()
-
-
-def _make_bias_analyzer() -> BiasAnalyzer:
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if key:
-        from shared.ai_client.claude_client import ClaudeClient
-        return BiasAnalyzer(ai_client=ClaudeClient(key))
-    return BiasAnalyzer()
-
-
-_decision_service = HireDecisionService(bias_analyzer=_make_bias_analyzer())
+_decision_service = HireDecisionService(bias_analyzer=BiasAnalyzer(ai_client=make_ai_client()))
 
 ALLOWED_CONTENT_TYPES = {"application/pdf"}
 
@@ -222,7 +212,7 @@ class BiasCheckTextRequest(BaseModel):
 @router.post("/check-justification-bias")
 def check_justification_bias(body: BiasCheckTextRequest):
     """Pre-check justification text for bias without recording any decision."""
-    result = _decision_service._bias_analyzer.analyse(body.text)
+    result = _decision_service.check_justification_bias(body.text)
     return {
         "flagged": result.flagged,
         "flagged_phrases": [

@@ -163,3 +163,33 @@ class TestRemind:
         client.patch(f"/training/modules/{module_id}/progress", json={"completion_pct": 100})
         response = client.post(f"/training/modules/{module_id}/remind")
         assert response.status_code == 409
+
+
+class TestDueDateValidation:
+    """due_date must be today or in the future."""
+
+    def test_past_due_date_returns_422(self):
+        payload = {**VALID_MODULE, "due_date": str(date.today() - timedelta(days=1))}
+        response = client.post("/training/modules", json=payload)
+        assert response.status_code == 422
+
+    def test_far_past_due_date_returns_422(self):
+        payload = {**VALID_MODULE, "due_date": "2020-01-01"}
+        response = client.post("/training/modules", json=payload)
+        assert response.status_code == 422
+
+    def test_today_as_due_date_is_accepted(self):
+        payload = {**VALID_MODULE, "due_date": str(date.today())}
+        response = client.post("/training/modules", json=payload)
+        assert response.status_code == 201
+
+    def test_future_due_date_is_accepted(self):
+        payload = {**VALID_MODULE, "due_date": str(date.today() + timedelta(days=1))}
+        response = client.post("/training/modules", json=payload)
+        assert response.status_code == 201
+
+    def test_past_due_date_error_is_descriptive(self):
+        payload = {**VALID_MODULE, "due_date": str(date.today() - timedelta(days=1))}
+        response = client.post("/training/modules", json=payload)
+        detail = str(response.json())
+        assert "due_date" in detail or "future" in detail or "today" in detail
