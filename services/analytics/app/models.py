@@ -85,4 +85,6 @@ class PipelineEventIn(BaseModel):
 
 
 class BiasIncidentIn(BaseModel):
-    s
+    service: IncidentService
+    flagged: bool = True
+    timestamp: datetime | None = None

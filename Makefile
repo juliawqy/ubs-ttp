@@ -1,4 +1,4 @@
-.PHONY: dev test lint build clean setup
+.PHONY: dev test lint build clean setup seed
 
 setup:
 	cp .env.example .env
@@ -34,6 +34,9 @@ docs:
 
 build:
 	docker compose build
+
+seed:
+	python tools/seed_demo.py
 
 clean:
 	docker compose down -v

@@ -19,6 +19,27 @@ router = APIRouter(prefix="/metrics", tags=["metrics"])
 _AVG_PROMOTION_MONTHS: float = 14.2
 _ENPS_SCORE: int = 42
 
+# Stub: AI-synthesised feedback themes for the dashboard.
+# In production this would call the ai-assistant service with the logged-in
+# manager's aggregated 360-degree feedback and return Claude-generated themes.
+_FEEDBACK_INSIGHTS: list[dict] = [
+    {
+        "theme": "Communication clarity",
+        "mentions": 3,
+        "suggestion": "Share decision rationale in team channels before acting — reduces follow-up questions and builds trust.",
+    },
+    {
+        "theme": "Recognition & acknowledgement",
+        "mentions": 2,
+        "suggestion": "Name individual contributions in standups. Small, specific praise lands better than general thanks.",
+    },
+    {
+        "theme": "Meeting structure",
+        "mentions": 2,
+        "suggestion": "Circulate a clear agenda 24 hours before recurring meetings so the team can prepare.",
+    },
+]
+
 # ── Module-level singleton (reset in tests via conftest) ───────────────────────
 _store = MetricsStore()
 
@@ -99,6 +120,7 @@ def get_kpis(
             {"group": "non_binary",  "pct": 80.0},
             {"group": "unspecified", "pct": 60.0},
         ],
+        "feedback_insights": _FEEDBACK_INSIGHTS,
     }
 
 
