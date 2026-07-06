@@ -114,7 +114,7 @@ class TestAnalyseMethod:
         }
         analyzer = BiasAnalyzer(ai_client=mock_client)
         analyzer.analyse("some text")
-        mock_client.analyze_bias.assert_called_once()
+        mock_client.analyze_bias.assert_called_once_with("some text")
 
     def test_analyse_with_ai_client_sets_ai_used_true(self):
         from unittest.mock import MagicMock

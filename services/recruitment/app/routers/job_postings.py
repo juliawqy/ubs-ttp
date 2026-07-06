@@ -7,7 +7,7 @@ in the service -- the router owns only HTTP and in-memory storage.
 from typing import Annotated
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
-import os
+from shared.ai_client.factory import make_ai_client
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer
 from app.services.job_postings import (
     JobPostingsService,
@@ -17,21 +17,13 @@ from app.services.job_postings import (
 
 router = APIRouter(prefix="/job-postings", tags=["job postings"])
 
-
-def _make_bias_analyzer() -> BiasAnalyzer:
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if key:
-        from shared.ai_client.claude_client import ClaudeClient
-        return BiasAnalyzer(ai_client=ClaudeClient(key))
-    return BiasAnalyzer()
-
-
-_service = JobPostingsService(bias_analyzer=_make_bias_analyzer())
+_service = JobPostingsService(bias_analyzer=BiasAnalyzer(ai_client=make_ai_client()))
 
 # -- in-memory store -----------------------------------------------------------
 _store: dict[int, dict] = {}
 _next_id = 1
 
+# Alphanumeric, hyphens, underscores only — no free-text IDs.
 _IdStr = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]+$", min_length=1)]
 
 

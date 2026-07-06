@@ -10,20 +10,14 @@ POST /assistant/analyze -- analyse any HR text (job ad, review, feedback)
 from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, field_validator
-from pydantic_settings import BaseSettings
+from shared.ai_client.factory import make_ai_client
 from app.models import AnalysisResult
 from app.services.bias_classifier import BiasDetectionService
 
 router = APIRouter(prefix="/assistant", tags=["assistant"])
 
 
-# -- settings / DI ---------------------------------------------------------------
-
-class _Settings(BaseSettings):
-    anthropic_api_key: str = ""
-
-    model_config = {"env_file": ".env"}
-
+# -- DI -----------------------------------------------------------------------
 
 def get_service() -> BiasDetectionService:
     """
@@ -32,13 +26,10 @@ def get_service() -> BiasDetectionService:
     if the API is unavailable (key missing, network error, quota, etc.).
     Tests override this via app.dependency_overrides[get_service].
     """
-    from shared.ai_client.claude_client import ClaudeClient
-    settings = _Settings()
-    ai_client = ClaudeClient(settings.anthropic_api_key)
-    return BiasDetectionService(ai_client=ai_client)
+    return BiasDetectionService(ai_client=make_ai_client())
 
 
-# -- schemas ---------------------------------------------------------------------
+# -- schemas ------------------------------------------------------------------
 
 class AnalyzeRequest(BaseModel):
     text: str
@@ -67,9 +58,15 @@ class AnalyzeResponse(BaseModel):
     ai_used: bool
 
 
-# -- helpers ---------------------------------------------------------------------
+# -- routes -------------------------------------------------------------------
 
-def _result_to_response(result: AnalysisResult) -> AnalyzeResponse:
+@router.post("/analyze", response_model=AnalyzeResponse)
+def analyze(
+    body: AnalyzeRequest,
+    svc: Annotated[BiasDetectionService, Depends(get_service)],
+) -> AnalyzeResponse:
+    """TTP-24: Analyse HR text for biased language using Claude AI with rule-based fallback."""
+    result: AnalysisResult = svc.analyze(body.text, body.context)
     return AnalyzeResponse(
         flagged=result.flagged,
         flagged_phrases=[
@@ -85,19 +82,3 @@ def _result_to_response(result: AnalysisResult) -> AnalyzeResponse:
         overall_suggestion=result.overall_suggestion,
         ai_used=result.ai_used,
     )
-
-
-# -- routes ----------------------------------------------------------------------
-
-@router.post("/analyze")
-def analyze(
-    body: AnalyzeRequest,
-    svc: Annotated[BiasDetectionService, Depends(get_service)],
-) -> AnalyzeResponse:
-    """
-    Analyse HR text for biased language.
-    Always calls Claude AI; rule-based analysis is the silent fallback if
-    the AI API is unavailable.
-    """
-    result = svc.analyze(body.text, body.context)
-    return _result_to_response(result)

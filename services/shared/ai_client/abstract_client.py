@@ -1,5 +1,8 @@
 """
 Abstract AI client interface.
+All AI provider implementations must inherit from this class and implement
+every abstract method.  Never import a concrete client (ClaudeClient, etc.)
+directly in services — inject AbstractAIClient instead.
 """
 from abc import ABC, abstractmethod
 
@@ -8,6 +11,11 @@ class AbstractAIClient(ABC):
     """
     Abstract base class for all AI clients.
     Inject this type — never import ClaudeClient directly in services.
+
+    All three methods are abstract so that an incomplete implementation
+    fails loudly at class-instantiation time rather than silently degrading
+    at call time (fixes the LSP/ISP smell where analyze_bias was concrete
+    and callers swallowed NotImplementedError as 'AI unavailable').
     """
 
     @abstractmethod
@@ -26,15 +34,11 @@ class AbstractAIClient(ABC):
         """
         ...
 
+    @abstractmethod
     def analyze_bias(self, text: str, context: str = "general") -> dict:
         """
         Deep bias analysis with category and severity enrichment.
         Returns dict: {flagged, phrases: [{phrase, reason, suggestion, category, severity}],
                        overall_suggestion}
-        Non-abstract — subclasses opt in by overriding.
-        Default raises NotImplementedError so callers can detect and fall back gracefully.
         """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not implement analyze_bias. "
-            "Use analyse_rule_based() as fallback."
-        )
+        ...

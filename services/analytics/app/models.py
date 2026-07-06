@@ -62,7 +62,7 @@ class FunnelStage(BaseModel):
 class DiversityResponse(BaseModel):
     total_applicants: int
     sourcing_diversity_ratio: float
-    skills_hire_rate: float
+    offer_acceptance_rate: float
     stages: dict[str, dict[str, int]]
     funnel: list[FunnelStage]
 
@@ -85,6 +85,4 @@ class PipelineEventIn(BaseModel):
 
 
 class BiasIncidentIn(BaseModel):
-    service: IncidentService
-    flagged: bool = True
-    timestamp: datetime | None = None
+    s

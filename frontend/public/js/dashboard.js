@@ -18,7 +18,7 @@ function renderKPITiles(kpis) {
   document.getElementById("kpi-diversity").textContent =
     kpis.sourcing_diversity_ratio.toFixed(1) + "%";
   document.getElementById("kpi-skills-hire").textContent =
-    kpis.skills_hire_rate.toFixed(1) + "%";
+    kpis.offer_acceptance_rate.toFixed(1) + "%";
   document.getElementById("kpi-promo-velocity").textContent =
     kpis.avg_promotion_months + " mo";
   document.getElementById("kpi-enps").textContent = kpis.enps_score;
@@ -130,9 +130,4 @@ function showError(msg) {
   if (!container) return;
   const banner = document.createElement("div");
   banner.style.cssText =
-    "background:#fee2e2;color:#b91c1c;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;font-size:.875rem;";
-  banner.textContent = "Dashboard data unavailable: " + msg;
-  container.prepend(banner);
-}
-
-loadDashboard();
+    "background:#fee2e2;color:#b91c1c;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem

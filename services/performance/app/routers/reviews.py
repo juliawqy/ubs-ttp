@@ -12,28 +12,20 @@ POST /reviews/check-bias  -- pre-check free text for bias without recording a
                              review (frontend's live bias warnings, mirrors
                              recruitment's /candidates/check-justification-bias)
 """
-import os
 from typing import Annotated
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from shared.ai_client.factory import make_ai_client
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer, BiasAnalysisResult
 from app.models import CriterionScore, Review, RUBRIC_CRITERIA, MIN_SCORE, MAX_SCORE
 from app.services.review import ReviewService
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
-
-def _make_bias_analyzer() -> BiasAnalyzer:
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if key:
-        from shared.ai_client.claude_client import ClaudeClient
-        return BiasAnalyzer(ai_client=ClaudeClient(key))
-    return BiasAnalyzer()
-
-
-_bias_analyzer = _make_bias_analyzer()
+_bias_analyzer = BiasAnalyzer(ai_client=make_ai_client())
 _review_service = ReviewService(bias_analyzer=_bias_analyzer)
 
+# Shared type alias: alphanumeric, hyphens, underscores only.
 _IdStr = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]+$", min_length=1)]
 
 

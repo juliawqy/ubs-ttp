@@ -16,6 +16,9 @@ from app.services.bias_incident import BiasIncidentService
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
+_AVG_PROMOTION_MONTHS: float = 14.2
+_ENPS_SCORE: int = 42
+
 # ── Module-level singleton (reset in tests via conftest) ───────────────────────
 _store = MetricsStore()
 
@@ -78,9 +81,9 @@ def get_kpis(
     return {
         # KPI tiles
         "sourcing_diversity_ratio": diversity.sourcing_diversity_ratio,
-        "skills_hire_rate": diversity.skills_hire_rate,
-        "avg_promotion_months": 14.2,   # seeded static — extend when HR data integrated
-        "enps_score": 42,               # seeded static — extend when survey data integrated
+        "offer_acceptance_rate": diversity.offer_acceptance_rate,
+        "avg_promotion_months": _AVG_PROMOTION_MONTHS,
+        "enps_score": _ENPS_SCORE,
         # Chart data
         "pipeline_by_stage": [
             {"stage": f.stage, "total": f.total, "pct": f.diverse_pct}

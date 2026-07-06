@@ -1,31 +1,38 @@
 """
-Integration tests for the AI Assistant with mocked Claude responses (TTP-26).
-Tests: correct response parsing, fallback when API unavailable.
-Run: pytest services/ai-assistant/tests/integration/test_assistant_integration.py -v
+Integration tests for POST /assistant/analyze (TTP-26).
+
+These tests exercise the full HTTP stack — router schema validation,
+dependency wiring, and service logic — by sending real HTTP requests via
+TestClient with an AI client injected through FastAPI dependency_overrides.
+
+Contrast with tests/unit/test_bias_detection_service.py, which tests the
+service class in isolation.  Here we verify that the router, serialisation,
+and service all cooperate correctly end-to-end.
 """
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from app.main import app
+from app.routers.assistant import get_service
 from app.services.bias_classifier import BiasDetectionService
 from app.models import BiasCategory
 
 
-# ── mock helpers ─────────────────────────────────────────────────────────────
+# ── mock helpers ──────────────────────────────────────────────────────────────
 
-def _make_mock_client(response: dict) -> MagicMock:
-    client = MagicMock()
-    client.analyze_bias.return_value = response
-    return client
-
-
-def _make_failing_client(exc: Exception = None) -> MagicMock:
-    client = MagicMock()
-    client.analyze_bias.side_effect = exc or RuntimeError("Claude API unavailable")
-    return client
+def _make_mock_service(response: dict) -> BiasDetectionService:
+    mock_client = MagicMock()
+    mock_client.analyze_bias.return_value = response
+    return BiasDetectionService(ai_client=mock_client)
 
 
-MOCK_CLAUDE_FLAGGED = {
+def _make_failing_service(exc: Exception | None = None) -> BiasDetectionService:
+    mock_client = MagicMock()
+    mock_client.analyze_bias.side_effect = exc or RuntimeError("Claude API unavailable")
+    return BiasDetectionService(ai_client=mock_client)
+
+
+MOCK_FLAGGED = {
     "flagged": True,
     "phrases": [
         {
@@ -46,126 +53,142 @@ MOCK_CLAUDE_FLAGGED = {
     "overall_suggestion": "Use inclusive, skills-focused language throughout.",
 }
 
-MOCK_CLAUDE_CLEAN = {
+MOCK_CLEAN = {
     "flagged": False,
     "phrases": [],
     "overall_suggestion": None,
 }
 
 
-# ── mocked Claude responses ───────────────────────────────────────────────────
+@pytest.fixture(autouse=True)
+def clear_overrides():
+    """Ensure dependency_overrides are cleared after each test."""
+    yield
+    app.dependency_overrides.clear()
 
-class TestMockedClaudeResponses:
-    def test_mocked_flagged_response_sets_flagged_true(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_FLAGGED)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("We want a ninja and young and dynamic team member.", "job_posting")
-        assert result.flagged is True
 
-    def test_mocked_response_phrase_count_matches(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_FLAGGED)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("We want a ninja and young and dynamic team member.", "job_posting")
-        assert len(result.flagged_phrases) == 2
+# ── HTTP-level: flagged response ───────────────────────────────────────────────
 
-    def test_mocked_phrase_text_parsed_correctly(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_FLAGGED)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("We want a ninja and young and dynamic team member.", "job_posting")
-        phrases = [p.phrase for p in result.flagged_phrases]
+class TestFlaggedResponseHTTP:
+    """Mocked AI returns a flagged result — verify the full HTTP response shape."""
+
+    def _client(self) -> TestClient:
+        app.dependency_overrides[get_service] = lambda: _make_mock_service(MOCK_FLAGGED)
+        return TestClient(app)
+
+    def test_returns_200(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        assert res.status_code == 200
+
+    def test_flagged_is_true(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        assert res.json()["flagged"] is True
+
+    def test_phrase_count_matches_mock(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        assert len(res.json()["flagged_phrases"]) == 2
+
+    def test_phrase_text_is_forwarded(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        phrases = [p["phrase"] for p in res.json()["flagged_phrases"]]
         assert "ninja" in phrases
         assert "young and dynamic" in phrases
 
-    def test_mocked_phrase_category_parsed_correctly(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_FLAGGED)
+    def test_phrase_category_is_serialised(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        ninja = next(p for p in res.json()["flagged_phrases"] if p["phrase"] == "ninja")
+        assert ninja["category"] == "gender"
+
+    def test_phrase_severity_is_serialised(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        ninja = next(p for p in res.json()["flagged_phrases"] if p["phrase"] == "ninja")
+        assert ninja["severity"] == 2
+
+    def test_overall_suggestion_is_forwarded(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        assert res.json()["overall_suggestion"] == "Use inclusive, skills-focused language throughout."
+
+    def test_ai_used_is_true(self):
+        res = self._client().post("/assistant/analyze", json={"text": "We need a ninja."})
+        assert res.json()["ai_used"] is True
+
+
+# ── HTTP-level: clean response ─────────────────────────────────────────────────
+
+class TestCleanResponseHTTP:
+    def _client(self) -> TestClient:
+        app.dependency_overrides[get_service] = lambda: _make_mock_service(MOCK_CLEAN)
+        return TestClient(app)
+
+    def test_returns_200(self):
+        res = self._client().post("/assistant/analyze", json={"text": "Strong communicator."})
+        assert res.status_code == 200
+
+    def test_flagged_is_false(self):
+        res = self._client().post("/assistant/analyze", json={"text": "Strong communicator."})
+        assert res.json()["flagged"] is False
+
+    def test_flagged_phrases_is_empty(self):
+        res = self._client().post("/assistant/analyze", json={"text": "Strong communicator."})
+        assert res.json()["flagged_phrases"] == []
+
+
+# ── HTTP-level: input validation ───────────────────────────────────────────────
+
+class TestInputValidationHTTP:
+    def _client(self) -> TestClient:
+        app.dependency_overrides[get_service] = lambda: _make_mock_service(MOCK_CLEAN)
+        return TestClient(app)
+
+    def test_blank_text_returns_422(self):
+        res = self._client().post("/assistant/analyze", json={"text": "   "})
+        assert res.status_code == 422
+
+    def test_missing_text_field_returns_422(self):
+        res = self._client().post("/assistant/analyze", json={})
+        assert res.status_code == 422
+
+    def test_context_forwarded_to_ai_client(self):
+        """Verify context flows through the full HTTP → service → AI client path."""
+        mock_client = MagicMock()
+        mock_client.analyze_bias.return_value = MOCK_CLEAN
         svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("We want a ninja.", "job_posting")
-        ninja_phrase = next(p for p in result.flagged_phrases if p.phrase == "ninja")
-        assert ninja_phrase.category == BiasCategory.gender
-
-    def test_mocked_phrase_severity_parsed_correctly(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_FLAGGED)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("We want a ninja.", "job_posting")
-        ninja_phrase = next(p for p in result.flagged_phrases if p.phrase == "ninja")
-        assert ninja_phrase.severity == 2
-
-    def test_mocked_age_phrase_has_age_category(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_FLAGGED)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("young and dynamic team", "job_posting")
-        age_phrase = next(p for p in result.flagged_phrases if p.phrase == "young and dynamic")
-        assert age_phrase.category == BiasCategory.age
-
-    def test_mocked_overall_suggestion_returned(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_FLAGGED)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("We want a ninja.", "job_posting")
-        assert result.overall_suggestion == "Use inclusive, skills-focused language throughout."
-
-    def test_mocked_clean_response_not_flagged(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_CLEAN)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("Strong communicator with collaborative style.", "review")
-        assert result.flagged is False
-
-    def test_mocked_clean_response_empty_phrases(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_CLEAN)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("Strong communicator with collaborative style.", "review")
-        assert result.flagged_phrases == []
-
-    def test_ai_used_true_when_mock_client_provided(self):
-        mock_client = _make_mock_client(MOCK_CLAUDE_CLEAN)
-        svc = BiasDetectionService(ai_client=mock_client)
-        result = svc.analyze("Some text.", "general")
-        assert result.ai_used is True
+        app.dependency_overrides[get_service] = lambda: svc
+        client = TestClient(app)
+        client.post("/assistant/analyze", json={"text": "Some text.", "context": "job_posting"})
+        mock_client.analyze_bias.assert_called_once_with("Some text.", "job_posting")
 
 
-# ── fallback: API unavailable ─────────────────────────────────────────────────
+# ── HTTP-level: fallback on AI failure ────────────────────────────────────────
 
-class TestFallbackBehaviour:
-    def test_fallback_does_not_raise(self):
-        failing = _make_failing_client()
-        svc = BiasDetectionService(ai_client=failing)
-        result = svc.analyze("Total rockstar.", "review")
-        assert result is not None
+class TestFallbackBehaviourHTTP:
+    """AI failures must degrade gracefully — still return 200 via rule-based fallback."""
 
-    def test_fallback_still_catches_rule_based_flags(self):
-        failing = _make_failing_client()
-        svc = BiasDetectionService(ai_client=failing)
-        result = svc.analyze("We need a rockstar ninja developer.", "job_posting")
-        assert result.flagged is True
+    def test_api_failure_returns_200(self):
+        app.dependency_overrides[get_service] = lambda: _make_failing_service()
+        res = TestClient(app).post("/assistant/analyze", json={"text": "Total rockstar."})
+        assert res.status_code == 200
 
-    def test_fallback_rule_based_phrases_have_category(self):
-        failing = _make_failing_client()
-        svc = BiasDetectionService(ai_client=failing)
-        result = svc.analyze("We need a rockstar.", "job_posting")
-        assert result.flagged_phrases[0].category is not None
+    def test_api_failure_still_catches_rule_based_flags(self):
+        app.dependency_overrides[get_service] = lambda: _make_failing_service()
+        res = TestClient(app).post("/assistant/analyze", json={"text": "We need a rockstar ninja."})
+        assert res.json()["flagged"] is True
 
-    def test_fallback_ai_used_is_false(self):
-        failing = _make_failing_client()
-        svc = BiasDetectionService(ai_client=failing)
-        result = svc.analyze("Total rockstar.", "review")
-        assert result.ai_used is False
+    def test_api_failure_sets_ai_used_false(self):
+        app.dependency_overrides[get_service] = lambda: _make_failing_service()
+        res = TestClient(app).post("/assistant/analyze", json={"text": "Total rockstar."})
+        assert res.json()["ai_used"] is False
 
-    def test_fallback_on_connection_error(self):
-        """Even a network-level error should gracefully degrade."""
-        failing = _make_failing_client(ConnectionError("Network unreachable"))
-        svc = BiasDetectionService(ai_client=failing)
-        result = svc.analyze("Some text.", "review")
-        assert result is not None
+    def test_connection_error_degrades_gracefully(self):
+        app.dependency_overrides[get_service] = lambda: _make_failing_service(
+            ConnectionError("Network unreachable")
+        )
+        res = TestClient(app).post("/assistant/analyze", json={"text": "Some text."})
+        assert res.status_code == 200
 
-    def test_fallback_on_json_parse_error(self):
-        """Malformed Claude response should also degrade gracefully."""
-        failing = _make_failing_client(ValueError("JSON decode error"))
-        svc = BiasDetectionService(ai_client=failing)
-        result = svc.analyze("Some text.", "review")
-        assert result is not None
-
-    def test_fallback_clean_text_still_clean(self):
-        failing = _make_failing_client()
-        svc = BiasDetectionService(ai_client=failing)
-        result = svc.analyze("Clear communication and collaboration.", "review")
-        assert result.flagged is False
-        assert result.ai_used is False
+    def test_json_parse_error_degrades_gracefully(self):
+        app.dependency_overrides[get_service] = lambda: _make_failing_service(
+            ValueError("JSON decode error")
+        )
+        res = TestClient(app).post("/assistant/analyze", json={"text": "Some text."})
+        assert res.status_code == 200

@@ -4,6 +4,7 @@ Human-in-the-loop: the system flags biased language; the manager retains final s
 """
 from shared.base.service import BaseService
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer
+from shared.bias_analyzer.models import BiasAnalysisResult
 from app.models import HireDecision
 
 VALID_DECISIONS = frozenset({"hired", "rejected"})
@@ -21,6 +22,13 @@ class HireDecisionService(BaseService):
 
     def __init__(self, bias_analyzer: BiasAnalyzer):
         self._bias_analyzer = bias_analyzer
+
+    def check_justification_bias(self, text: str) -> BiasAnalysisResult:
+        """
+        Run bias analysis on justification text without recording a decision.
+        Public façade so callers never reach into the private _bias_analyzer attribute.
+        """
+        return self._bias_analyzer.analyse(text)
 
     def record(self, candidate_id: int, decision: str, justification: str) -> HireDecision:
         """

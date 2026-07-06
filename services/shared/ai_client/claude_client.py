@@ -5,13 +5,17 @@ Never called directly — always via a service class that injects it.
 """
 import json
 import anthropic
+from .abstract_client import AbstractAIClient
 from .constraints import AIConstraints
 
 
-class ClaudeClient:
+class ClaudeClient(AbstractAIClient):
     """
     Wrapper around the Anthropic Claude API.
     Enforces: PII stripping, field allowlisting, token budgets, audit logging.
+
+    Inherits from AbstractAIClient so that type-checkers and DI containers
+    can verify conformance at definition time rather than at call time.
     """
 
     MODEL = "claude-haiku-4-5-20251001"  # cheapest model — use for all non-complex tasks
@@ -24,6 +28,9 @@ class ClaudeClient:
         Make a constrained Claude API call.
         Only fields listed in constraints.allowed_fields are sent.
         Returns parsed JSON response.
+
+        Handles fenced-JSON responses (```json ... ```) that Claude sometimes
+        produces when given JSON-only system prompts.
         """
         # Enforce field allowlist — never send more than permitted
         filtered = {k: v for k, v in payload.items() if k in constraints.allowed_fields}

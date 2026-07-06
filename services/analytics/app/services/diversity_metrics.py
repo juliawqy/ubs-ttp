@@ -36,7 +36,7 @@ class DiversityMetricsService:
     def get_diversity(self) -> DiversityResponse:
         """
         Build a full diversity report: per-stage demographic breakdown,
-        funnel totals, sourcing diversity ratio, and skills-hire rate.
+        funnel totals, sourcing diversity ratio, and offer-acceptance rate.
         """
         events = self._store.get_pipeline_events()
 
@@ -69,17 +69,20 @@ class DiversityMetricsService:
         applied_funnel = funnel[0]
         sourcing_diversity_ratio = applied_funnel.diverse_pct
 
-        # KPI: skills-hire rate (hires / offers — proxy for bias-free decision making)
+        # KPI: offer-acceptance rate (hires / offers)
         offered_total = funnel[2].total
         hired_total = funnel[3].total
-        skills_hire_rate = (
+        offer_acceptance_rate = (
             round(hired_total / offered_total * 100, 1) if offered_total > 0 else 0.0
         )
 
         return DiversityResponse(
             total_applicants=applied_funnel.total,
             sourcing_diversity_ratio=sourcing_diversity_ratio,
-            skills_hire_rate=skills_hire_rate,
-            stages={stage.value: stage_counts[stage] for stage in _STAGE_ORDER},
+            offer_acceptance_rate=offer_acceptance_rate,
+            stages={
+                stage.value: stage_counts[stage]
+                for stage in _STAGE_ORDER
+            },
             funnel=funnel,
         )
