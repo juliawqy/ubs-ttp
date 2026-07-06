@@ -188,3 +188,49 @@ class TestCheckBias:
         phrase_obj = body["flagged_phrases"][0]
         assert "phrase" in phrase_obj
         assert "suggestion" in phrase_obj
+
+
+class TestCriterionScoreRangeValidation:
+    """Score must be int 1-5 (Pydantic Field ge=1, le=5)."""
+
+    def test_score_of_zero_returns_422(self):
+        payload = _valid_payload(criteria=[{"criterion": "growth", "score": 0}])
+        response = client.post("/reviews", json=payload)
+        assert response.status_code == 422
+
+    def test_score_of_six_returns_422(self):
+        payload = _valid_payload(criteria=[{"criterion": "growth", "score": 6}])
+        response = client.post("/reviews", json=payload)
+        assert response.status_code == 422
+
+    def test_negative_score_returns_422(self):
+        payload = _valid_payload(criteria=[{"criterion": "growth", "score": -1}])
+        response = client.post("/reviews", json=payload)
+        assert response.status_code == 422
+
+    def test_score_of_one_is_accepted(self):
+        payload = _valid_payload(criteria=[{"criterion": "growth", "score": 1}])
+        response = client.post("/reviews", json=payload)
+        assert response.status_code == 201
+
+    def test_score_of_five_is_accepted(self):
+        payload = _valid_payload(criteria=[{"criterion": "ownership", "score": 5}])
+        response = client.post("/reviews", json=payload)
+        assert response.status_code == 201
+
+
+class TestReviewIdFormatValidation:
+    """employee_id and reviewer_id must match ^[a-zA-Z0-9_-]+."""
+
+    def test_employee_id_with_spaces_returns_422(self):
+        response = client.post("/reviews", json=_valid_payload(employee_id="not valid id"))
+        assert response.status_code == 422
+
+    def test_reviewer_id_with_apostrophe_returns_422(self):
+        response = client.post("/reviews", json=_valid_payload(reviewer_id="thisisn'tanID"))
+        assert response.status_code == 422
+
+    def test_valid_hyphen_ids_are_accepted(self):
+        payload = _valid_payload(employee_id="emp-42", reviewer_id="mgr-99")
+        response = client.post("/reviews", json=payload)
+        assert response.status_code == 201

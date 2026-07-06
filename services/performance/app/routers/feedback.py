@@ -9,20 +9,23 @@ Unlike reviews.py, this router owns no separate *Store: FeedbackService
 itself owns persistence (see app/services/feedback.py docstring for why),
 so the router only ever talks to the service.
 """
+from typing import Annotated
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.services.feedback import FeedbackService
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
 _feedback_service = FeedbackService()
 
+_IdStr = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]+$", min_length=1)]
+
 
 # -- schemas ---------------------------------------------------------------------
 
 class FeedbackCreate(BaseModel):
-    employee_id: str
-    rater_id: str
+    employee_id: _IdStr
+    rater_id: _IdStr
     comments: str
 
 

@@ -13,8 +13,15 @@ rater_id is retained in the raw store purely to enforce that invariant.
 It is never copied onto AnonymisedFeedback -- the aggregated view has no
 rater_id field at all, so there is nothing to accidentally expose later.
 """
+import re
 from shared.base.service import BaseService
 from app.models import AnonymisedFeedback, FeedbackEntry
+
+_OFFENSIVE_RE = re.compile(
+    r"\b(idiot|moron|stupid(?:\s+\w+)?|useless|waste of space|incompetent fool"
+    r"|dumb(?:\s+\w+)?|loser|jerk|asshole|bastard|bitch|pathetic|worthless)\b",
+    re.IGNORECASE,
+)
 
 
 class FeedbackService(BaseService):
@@ -28,9 +35,9 @@ class FeedbackService(BaseService):
         Validate and record one rater's feedback about an employee.
 
         Raises:
-            ValueError: if employee_id/rater_id/comments is empty, or if
-                        this rater has already submitted feedback for this
-                        employee.
+            ValueError: if employee_id/rater_id/comments is empty, if this
+                        rater has already submitted for this employee, or if
+                        comments contain clearly offensive language.
         """
         self._validate(employee_id, rater_id, comments)
 
@@ -67,3 +74,8 @@ class FeedbackService(BaseService):
             raise ValueError("rater_id cannot be empty")
         if not comments or not comments.strip():
             raise ValueError("comments cannot be empty")
+        if _OFFENSIVE_RE.search(comments):
+            raise ValueError(
+                "Comments contain offensive or harassing language. "
+                "Please use professional, behaviour-focused language."
+            )

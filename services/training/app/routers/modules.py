@@ -11,7 +11,7 @@ POST   /training/modules/{id}/remind    -- send a reminder if one is due
 from dataclasses import replace
 from datetime import date
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from app.models import TrainingModule
 from app.services.modules import TrainingModuleService, ModuleRequest
 from app.services.progress_tracker import ProgressTrackerService
@@ -63,12 +63,26 @@ class ModuleCreate(BaseModel):
     due_date: date
     description: str = ""
 
+    @field_validator("due_date")
+    @classmethod
+    def due_date_must_be_today_or_future(cls, v: date) -> date:
+        if v < date.today():
+            raise ValueError("due_date must be today or a future date")
+        return v
+
 
 class ModuleUpdate(BaseModel):
     title: str
     assigned_to: str
     due_date: date
     description: str = ""
+
+    @field_validator("due_date")
+    @classmethod
+    def due_date_must_be_today_or_future(cls, v: date) -> date:
+        if v < date.today():
+            raise ValueError("due_date must be today or a future date")
+        return v
 
 
 class ProgressUpdate(BaseModel):

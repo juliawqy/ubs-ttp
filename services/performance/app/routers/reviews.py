@@ -13,8 +13,9 @@ POST /reviews/check-bias  -- pre-check free text for bias without recording a
                              recruitment's /candidates/check-justification-bias)
 """
 import os
+from typing import Annotated
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer, BiasAnalysisResult
 from app.models import CriterionScore, Review, RUBRIC_CRITERIA, MIN_SCORE, MAX_SCORE
 from app.services.review import ReviewService
@@ -32,6 +33,8 @@ def _make_bias_analyzer() -> BiasAnalyzer:
 
 _bias_analyzer = _make_bias_analyzer()
 _review_service = ReviewService(bias_analyzer=_bias_analyzer)
+
+_IdStr = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]+$", min_length=1)]
 
 
 # -- in-memory store -----------------------------------------------------------
@@ -64,13 +67,13 @@ _store = ReviewStore()
 
 class CriterionScoreIn(BaseModel):
     criterion: str
-    score: int
+    score: int = Field(ge=MIN_SCORE, le=MAX_SCORE)
     comments: str = ""
 
 
 class ReviewCreate(BaseModel):
-    employee_id: str
-    reviewer_id: str
+    employee_id: _IdStr
+    reviewer_id: _IdStr
     criteria: list[CriterionScoreIn]
 
 

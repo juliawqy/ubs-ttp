@@ -162,3 +162,31 @@ class TestUpdateJobPosting:
         payload = {k: v for k, v in CLEAN_POSTING.items() if k != "manager"}
         response = client.put(f"/job-postings/{pid}", json=payload)
         assert response.status_code == 422
+
+
+class TestManagerIdFormatValidation:
+    """manager.id must match ^[a-zA-Z0-9_-]+ (Pydantic pattern)."""
+
+    def test_manager_id_with_spaces_returns_422(self):
+        bad_manager = {**MANAGER, "id": "not a valid id"}
+        response = client.post("/job-postings", json={**CLEAN_POSTING, "manager": bad_manager})
+        assert response.status_code == 422
+
+    def test_manager_id_with_apostrophe_returns_422(self):
+        bad_manager = {**MANAGER, "id": "thisisn'tanID"}
+        response = client.post("/job-postings", json={**CLEAN_POSTING, "manager": bad_manager})
+        assert response.status_code == 422
+
+    def test_manager_id_with_exclamation_returns_422(self):
+        bad_manager = {**MANAGER, "id": "mgr!!!"}
+        response = client.post("/job-postings", json={**CLEAN_POSTING, "manager": bad_manager})
+        assert response.status_code == 422
+
+    def test_valid_hyphenated_manager_id_is_accepted(self):
+        response = client.post("/job-postings", json=CLEAN_POSTING)
+        assert response.status_code == 201
+
+    def test_valid_underscore_manager_id_is_accepted(self):
+        good_manager = {**MANAGER, "id": "mgr_007"}
+        response = client.post("/job-postings", json={**CLEAN_POSTING, "manager": good_manager})
+        assert response.status_code == 201

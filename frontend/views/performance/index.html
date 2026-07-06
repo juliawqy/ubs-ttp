@@ -73,8 +73,8 @@
           anonymised, aggregated list of comments.
         </p>
         <form id="feedback-form" novalidate>
-          <div class="form-row"><label for="feedback-employee-id">About Employee *</label><input type="text" id="feedback-employee-id" name="employee_id" placeholder="e.g. emp-1" required /></div>
-          <div class="form-row"><label for="feedback-rater-id">Your Employee ID *</label><input type="text" id="feedback-rater-id" name="rater_id" placeholder="e.g. emp-2" required /></div>
+          <div class="form-row"><label for="feedback-employee-id">About Employee *</label><input type="text" id="feedback-employee-id" name="employee_id" placeholder="e.g. emp-1" pattern="[a-zA-Z0-9_\-]+" title="Alphanumeric characters, hyphens and underscores only" required /></div>
+          <div class="form-row"><label for="feedback-rater-id">Your Employee ID *</label><input type="text" id="feedback-rater-id" name="rater_id" placeholder="e.g. emp-2" pattern="[a-zA-Z0-9_\-]+" title="Alphanumeric characters, hyphens and underscores only" required /></div>
           <div class="form-row"><label for="feedback-comments">Comments *</label><textarea id="feedback-comments" name="comments" rows="4" placeholder="Describe observable behaviours and evidence…" required></textarea></div>
           <p class="form-error" id="feedback-form-error"></p>
           <p id="feedback-form-success" style="display:none;color:#22c55e;font-size:0.85rem;margin-top:0.5rem">Feedback submitted — thank you.</p>
@@ -113,8 +113,8 @@
     <div class="modal">
       <h2 id="review-modal-title">Write Performance Review</h2>
       <form id="review-form" novalidate>
-        <div class="form-row"><label for="review-employee-id">Employee ID *</label><input type="text" id="review-employee-id" name="employee_id" placeholder="e.g. emp-1" required /></div>
-        <div class="form-row"><label for="review-reviewer-id">Reviewer ID *</label><input type="text" id="review-reviewer-id" name="reviewer_id" placeholder="e.g. mgr-1" required /></div>
+        <div class="form-row"><label for="review-employee-id">Employee ID *</label><input type="text" id="review-employee-id" name="employee_id" placeholder="e.g. emp-1" pattern="[a-zA-Z0-9_\-]+" title="Alphanumeric characters, hyphens and underscores only" required /></div>
+        <div class="form-row"><label for="review-reviewer-id">Reviewer ID *</label><input type="text" id="review-reviewer-id" name="reviewer_id" placeholder="e.g. mgr-1" pattern="[a-zA-Z0-9_\-]+" title="Alphanumeric characters, hyphens and underscores only" required /></div>
         <p class="form-section-label" style="margin-top:1rem">Rubric — score each dimension</p>
         <div id="review-rubric-rows"><p style="color:#6b7280;font-size:0.85rem">Loading rubric…</p></div>
         <p class="hint">Comments are optional but, if provided, are checked for potentially biased language before the review is recorded. You retain the final wording either way.</p>

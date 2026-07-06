@@ -113,3 +113,35 @@ class TestAggregation:
         service.submit("emp-2", "rater-1", "Feedback for emp 2.")
         result = service.get_aggregated("emp-1")
         assert result.comments == ["Feedback for emp 1."]
+
+
+class TestOffensiveLanguageBlocked:
+    def test_clearly_offensive_comment_raises_value_error(self, service):
+        with pytest.raises(ValueError):
+            service.submit("emp-1", "rater-1", "that guy is an idiot, absolute waste of space")
+
+    def test_offensive_error_mentions_offensive_language(self, service):
+        with pytest.raises(ValueError, match="offensive"):
+            service.submit("emp-1", "rater-1", "Complete moron, totally useless.")
+
+    def test_offensive_comment_does_not_add_entry(self, service):
+        try:
+            service.submit("emp-1", "rater-1", "absolute idiot")
+        except ValueError:
+            pass
+        assert service.get_aggregated("emp-1").count == 0
+
+    def test_professional_critical_feedback_is_accepted(self, service):
+        result = service.submit(
+            "emp-1", "rater-1",
+            "Could improve prioritisation and time management significantly."
+        )
+        assert result.employee_id == "emp-1"
+
+    def test_moron_keyword_is_blocked(self, service):
+        with pytest.raises(ValueError):
+            service.submit("emp-1", "rater-1", "What a moron.")
+
+    def test_waste_of_space_phrase_is_blocked(self, service):
+        with pytest.raises(ValueError):
+            service.submit("emp-1", "rater-1", "This person is a waste of space.")

@@ -155,7 +155,7 @@
         <div class="form-row"><label for="post-department">Department *</label><input type="text" id="post-department" name="department" placeholder="e.g. Engineering" required /></div>
         <p class="form-section-label">Hiring Manager Details</p>
         <div class="form-row"><label for="manager-name">Name *</label><input type="text" id="manager-name" name="manager_name" placeholder="Full name" required /></div>
-        <div class="form-row"><label for="manager-id">Employee ID *</label><input type="text" id="manager-id" name="manager_id" placeholder="e.g. mgr-001" required /></div>
+        <div class="form-row"><label for="manager-id">Employee ID *</label><input type="text" id="manager-id" name="manager_id" placeholder="e.g. mgr-001" pattern="[a-zA-Z0-9_\-]+" title="Alphanumeric characters, hyphens and underscores only" required /></div>
         <div class="form-row"><label for="manager-dept">Manager's Department *</label><input type="text" id="manager-dept" name="manager_dept" placeholder="e.g. Engineering" required /></div>
         <div class="form-row"><label for="manager-email">Email *</label><input type="email" id="manager-email" name="manager_email" placeholder="manager@ubs.com" required /></div>
         <div class="bias-warning" id="bias-result"></div>

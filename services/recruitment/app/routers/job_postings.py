@@ -4,8 +4,9 @@ Accepts a manager's request to open a new role and passes it to
 JobPostingsService. Business logic (validation, bias check) lives
 in the service -- the router owns only HTTP and in-memory storage.
 """
+from typing import Annotated
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 import os
 from shared.bias_analyzer.bias_analyzer import BiasAnalyzer
 from app.services.job_postings import (
@@ -31,11 +32,13 @@ _service = JobPostingsService(bias_analyzer=_make_bias_analyzer())
 _store: dict[int, dict] = {}
 _next_id = 1
 
+_IdStr = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]+$", min_length=1)]
+
 
 # -- schemas -------------------------------------------------------------------
 
 class HiringManagerIn(BaseModel):
-    id: str
+    id: _IdStr
     name: str
     department: str
     email: EmailStr

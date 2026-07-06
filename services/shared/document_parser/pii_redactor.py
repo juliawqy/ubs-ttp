@@ -9,6 +9,14 @@ import re
 # Default patterns used when none are provided -- kept at module level so they
 # can be imported and extended without instantiating PIIRedactor.
 DEFAULT_PII_PATTERNS: dict[str, re.Pattern] = {
+    "NAME_TITLED": re.compile(
+        r"\b(Mr\.?|Mrs\.?|Ms\.?|Dr\.?|Prof\.?)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*",
+        re.IGNORECASE,
+    ),
+    "NAME_LABEL": re.compile(
+        r"(?:^|\n)[ \t]*(?:Full\s+)?Name\s*:\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+",
+        re.MULTILINE,
+    ),
     "EMAIL": re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
     "PHONE": re.compile(r"(\+?\d[\d\s\-().]{7,}\d)"),
     "URL":   re.compile(r"https?://\S+|www\.\S+"),
